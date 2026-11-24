@@ -1,0 +1,53 @@
+.aero-glass {
+  background: linear-gradient(180deg, #ffffff5c, #a0d9f21a 38%, #194f781a), rgba(var(--glass-tint), var(--glass-density));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-frame);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 8px #173b5366;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+.aero-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--paper);
+}
+.aero-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--toolbar-gradient);
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 1px 0 var(--white);
+}
+.aero-button, .aero-select {
+  min-height: var(--control-height);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--silver-gradient);
+  box-shadow: var(--edge-light), var(--raised-shadow);
+}
+.aero-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 3px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition-fast);
+}
+.aero-button--accent { background: var(--green-gradient); border-color: #568638; color: #234619; }
+.aero-button--toolbar { background: transparent; border-color: transparent; box-shadow: none; padding-inline: 8px; }
+.aero-button:not(:disabled):hover, .aero-select:not(:disabled):hover { background: var(--blue-gradient); border-color: #4386b2; box-shadow: var(--edge-light), var(--raised-shadow); }
+.aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: #3a7024; box-shadow: var(--edge-light), 0 0 0 1px #77aa4c; }
+.aero-button:not(:disabled):active, .aero-button[aria-pressed="true"] { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
+.aero-button:disabled, .aero-select:disabled { background: #e5ebef; border-color: #b5c4cf; color: #667c89; box-shadow: none; }
+.aero-button:disabled img { opacity: .55; }
+.aero-select { padding: 3px 8px; cursor: pointer; }
+.aero-input { min-height: var(--control-height); border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--white); box-shadow: var(--recessed-shadow); padding: 4px 8px; }
+@media (prefers-reduced-transparency: reduce) {
+  .aero-glass { backdrop-filter: none; }
+}
+@media (forced-colors: active) {
+  .aero-glass, .aero-panel, .aero-toolbar, .aero-button, .aero-select { border: 1px solid ButtonText; }
+}
