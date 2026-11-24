@@ -7,3 +7,5 @@ Colors, lighting and geometry belong in `src/styles/tokens.css`; shared control 
 Reference: [original Windows Photo Gallery screenshot](https://betawiki.net/wiki/Windows_Photo_Gallery), [2007 Photo Gallery reconstruction](https://www.viksoe.dk/code/photothing.htm), [2006 Photo Gallery overview](https://arstechnica.com/information-technology/2006/05/4018/), [Windows UX guide](https://learn.microsoft.com/en-us/windows/win32/uxguide/guidelines), [icon design](https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons). Use the previous [Frutiger theme](https://github.com/gelogonza/frutiger-obsidian-theme) and [7.css](https://github.com/khang-nd/7.css) as material references, not runtime dependencies.
 
 Native window decorations remain system-owned. The frame uses CSS reflections rather than unlicensed wallpapers. Preserve keyboard focus, reduced motion/transparency and high-contrast support. New photo features should reuse the existing shell.
+
+Keep the photo grid virtualized with a bounded viewport window; do not add pagination controls or eagerly decode off-screen images. Preserve selection and scroll during filesystem updates.

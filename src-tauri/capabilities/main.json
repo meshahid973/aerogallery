@@ -8,6 +8,8 @@
     "allow-pick-folder",
     "allow-list-roots",
     "allow-read-folder",
+    "allow-folder-revision",
+    "allow-photo-metadata",
     "allow-remove-root",
     "allow-thumbnail"
   ]

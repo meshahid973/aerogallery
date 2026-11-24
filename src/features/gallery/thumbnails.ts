@@ -74,7 +74,7 @@ export function useThumbnail(folder: Folder, name: string) {
         try {
           const bytes = await readThumbnail(folder, name);
           if (!active) return;
-          objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+          objectUrl = URL.createObjectURL(new Blob([bytes], { type: new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength))[0] === 0xff ? 'image/jpeg' : 'image/png' }));
           setUrl(objectUrl);
         } catch {
           if (active) setFailed(true);

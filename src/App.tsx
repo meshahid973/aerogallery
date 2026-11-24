@@ -36,7 +36,7 @@ export default function App() {
           <AeroIconButton variant="toolbar" icon="remove" label="Remove source folder from library" disabled={!active || busy} onClick={() => void gallery.remove()} />
           <span className="aero-separator" aria-hidden="true" />
           <AeroIconButton variant="toolbar" icon="up" label="Parent folder" disabled={!active?.parts.length || busy} onClick={() => active && void gallery.select({ ...active, parts: active.parts.slice(0, -1) })} />
-          <AeroIconButton variant="toolbar" icon="refresh" label="Refresh folder" disabled={!active || busy} onClick={() => active && void gallery.select(active)} />
+          <AeroIconButton variant="toolbar" icon="refresh" label="Refresh folder" disabled={!active || busy} onClick={() => void gallery.refresh()} />
           <span className={styles.spacer} />
           <AeroIconButton variant="toolbar" icon="appearance" label="Appearance" popoverTarget="appearance-panel" />
         </AeroToolbar>
@@ -51,7 +51,7 @@ export default function App() {
         </div>
         <div className={styles.workspace}>
           <FolderTree roots={roots} active={active} cache={gallery.cache} expanded={gallery.expanded} busy={busy} onSelect={(folder) => void gallery.select(folder)} onToggle={gallery.toggle} />
-          <GalleryPane key={active ? folderKey(active) : 'library'} folder={active} root={root} listing={gallery.listing} revision={gallery.revision} busy={busy} error={gallery.error} sort={sort} onSort={setSort} size={size} onSize={setSize} onSelectFolder={(folder) => void gallery.select(folder)} onAdd={() => void gallery.add()} />
+          <GalleryPane key={active ? folderKey(active) : 'library'} folder={active} root={root} listing={gallery.listing} busy={busy} error={gallery.error} sort={sort} onSort={setSort} size={size} onSize={setSize} onSelectFolder={(folder) => void gallery.select(folder)} onAdd={() => void gallery.add()} />
         </div>
       </AeroGlass>
     </div>

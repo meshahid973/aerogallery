@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { folderKey, isDesktop, listRoots, pickFolder, readFolder, removeRoot, rootFolder } from '../../lib/desktop';
+import { folderKey, folderRevision, isDesktop, listRoots, pickFolder, readFolder, removeRoot, rootFolder } from '../../lib/desktop';
 import type { Folder, Listing, Root } from '../../lib/desktop';
 
 export type FolderCache = ReadonlyMap<string, string[]>;
@@ -9,27 +9,27 @@ export function useGallery() {
   const [roots, setRoots] = useState<Root[]>([]);
   const [active, setActive] = useState<Folder | null>(null);
   const activeKey = useRef<string | null>(null);
+  const activeRevision = useRef<number | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
   const [tree, setTree] = useState<TreeState>({ cache: new Map(), expanded: new Set() });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [revision, setRevision] = useState(0);
   const pending = useRef(false);
 
-  const load = useCallback(async (folder: Folder) => {
+  const apply = useCallback((folder: Folder, result: Listing) => {
     const key = folderKey(folder);
-    if (activeKey.current !== key) {
-      activeKey.current = key;
-      setActive(folder);
-      setListing(null);
-    }
-    const result = await readFolder(folder);
     const ancestors = folder.parts.map((_, index) => folderKey({ ...folder, parts: folder.parts.slice(0, index) }));
     const protectedKeys = new Set([...ancestors, key]);
     setTree((previous) => {
       const cache = new Map(previous.cache);
       cache.delete(key);
       cache.set(key, result.folders);
+      const valid = (candidate: string) => {
+        if (candidate === key || !candidate.startsWith(key.slice(0, -1) + ',')) return true;
+        const parts = JSON.parse(candidate) as (number | string)[];
+        return result.folders.includes(String(parts[folder.parts.length + 1]));
+      };
+      for (const candidate of cache.keys()) if (!valid(candidate)) cache.delete(candidate);
       let count = [...cache.values()].reduce((total, children) => total + children.length, 0);
       for (const [candidate, children] of cache) {
         if (cache.size <= 64 && count <= 100_000) break;
@@ -41,9 +41,21 @@ export function useGallery() {
       const expanded = new Set([...previous.expanded, ...protectedKeys].filter((candidate) => cache.has(candidate)));
       return { cache, expanded };
     });
+    activeRevision.current = result.revision;
     setListing(result);
-    setRevision((previous) => previous + 1);
   }, []);
+
+  const load = useCallback(async (folder: Folder, refresh = false) => {
+    const key = folderKey(folder);
+    if (activeKey.current !== key) {
+      activeKey.current = key;
+      activeRevision.current = null;
+      setActive(folder);
+      setListing(null);
+    }
+    const result = await readFolder(folder, refresh);
+    apply(folder, result);
+  }, [apply]);
 
   const execute = useCallback(async (action: () => Promise<void>) => {
     if (!isDesktop || pending.current) return;
@@ -74,7 +86,36 @@ export function useGallery() {
     return () => { activeEffect = false; };
   }, [execute, load]);
 
+  useEffect(() => {
+    if (!isDesktop || !active) return;
+    let stopped = false;
+    let running = false;
+    const key = folderKey(active);
+    async function check() {
+      if (stopped || running || pending.current || activeKey.current !== key || !active) return;
+      running = true;
+      try {
+        const revision = await folderRevision(active);
+        if (stopped || pending.current || activeKey.current !== key || revision === activeRevision.current) return;
+        const result = await readFolder(active);
+        if (!stopped && !pending.current && activeKey.current === key) {
+          apply(active, result);
+          setError('');
+        }
+      } catch (failure) {
+        if (!stopped && !pending.current && activeKey.current === key) {
+          activeRevision.current = null;
+          setListing(null);
+          setError(typeof failure === 'string' ? failure : 'Cannot read this folder.');
+        }
+      } finally { running = false; }
+    }
+    const interval = window.setInterval(() => { void check(); }, 2500);
+    return () => { stopped = true; window.clearInterval(interval); };
+  }, [active, apply]);
+
   const select = (folder: Folder) => execute(() => load(folder));
+  const refresh = () => execute(async () => { if (active) await load(active, true); });
 
   const add = () => execute(async () => {
     const root = await pickFolder();
@@ -85,10 +126,7 @@ export function useGallery() {
 
   const toggle = (folder: Folder) => {
     const key = folderKey(folder);
-    if (!tree.cache.has(key)) {
-      void select(folder);
-      return;
-    }
+    if (!tree.cache.has(key)) { void select(folder); return; }
     setTree((previous) => {
       const expanded = new Set(previous.expanded);
       if (expanded.has(key)) expanded.delete(key);
@@ -104,6 +142,7 @@ export function useGallery() {
     const remaining = roots.filter((root) => root.id !== id);
     setRoots(remaining);
     activeKey.current = null;
+    activeRevision.current = null;
     setActive(null);
     setListing(null);
     const belongs = (key: string) => key === `[${id}]` || key.startsWith(`[${id},`);
@@ -114,5 +153,5 @@ export function useGallery() {
     if (remaining[0]) await load(rootFolder(remaining[0]));
   });
 
-  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy, error, revision, add, select, toggle, remove };
+  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy, error, add, select, refresh, toggle, remove };
 }
