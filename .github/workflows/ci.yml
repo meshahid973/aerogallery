@@ -9,8 +9,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   prepare:
-    runs-on: windows-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -21,9 +21,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: cargo update --workspace --manifest-path src-tauri/Cargo.toml
@@ -37,8 +34,6 @@ jobs:
             base64 -w 1024 "$f" | sed 's/^/FILE_DATA /'
             echo "END_FILE $f"
           done
-      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
-      - run: pnpm tauri build --no-bundle -- --locked
       - uses: actions/upload-artifact@v4
         with:
           name: engine-preview

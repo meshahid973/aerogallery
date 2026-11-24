@@ -17,6 +17,7 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 rusqlite = { version = "0.37", features = ["bundled"] }
 fast_image_resize = "5.5"
 kamadak-exif = "0.6"
+imagesize = "0.14"
 notify = "8"
 rayon = "1.10"
 

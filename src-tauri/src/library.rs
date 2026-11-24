@@ -377,4 +377,48 @@ mod tests {
         assert!(library.list(root.id,&[],false).is_err());
         assert!(source.is_dir());
     }
+
+    #[test]
+    fn recursively_indexes_and_removes_subtrees() {
+        let temp=tempfile::tempdir().unwrap();
+        let source=temp.path().join("pictures");
+        fs::create_dir_all(source.join("a")).unwrap();
+        fs::create_dir_all(source.join("b")).unwrap();
+        DynamicImage::new_rgb8(64,48).save(source.join("a/photo.png")).unwrap();
+        DynamicImage::new_rgb8(48,64).save(source.join("b/photo.png")).unwrap();
+        let (library,_receiver)=Library::initialize(&temp.path().join("data")).unwrap();
+        let root=library.add(source.clone()).unwrap();
+        let item=library.0.index.sources().unwrap().pop().unwrap();
+        library.scan_tree(&item,Vec::new());
+        assert_eq!(library.0.index.list(root.id,"a").unwrap().unwrap().photos.len(),1);
+        assert_eq!(library.0.index.list(root.id,"b").unwrap().unwrap().photos.len(),1);
+        let old=library.revision(root.id,&["a".into()]).unwrap();
+        fs::remove_dir_all(source.join("a")).unwrap();
+        library.reconcile(&item,Vec::new());
+        assert!(library.0.index.list(root.id,"a").unwrap().is_none());
+        fs::create_dir(source.join("a")).unwrap();
+        library.reconcile(&item,Vec::new());
+        assert!(library.revision(root.id,&["a".into()]).unwrap()>old);
+    }
+
+    #[test]
+    fn filesystem_notifications_update_cached_listing() {
+        let temp=tempfile::tempdir().unwrap();
+        let source=temp.path().join("pictures");
+        fs::create_dir_all(&source).unwrap();
+        let library=Library::open(&temp.path().join("data")).unwrap();
+        let root=library.add(source.clone()).unwrap();
+        let wait=|condition:&dyn Fn()->bool| {
+            let start=Instant::now();
+            while !condition() {
+                assert!(start.elapsed()<Duration::from_secs(15),"filesystem reconciliation timed out");
+                thread::sleep(Duration::from_millis(100));
+            }
+        };
+        wait(&||library.0.index.revision(root.id,"").unwrap().is_some());
+        DynamicImage::new_rgb8(64,48).save(source.join("new.png")).unwrap();
+        wait(&||library.0.index.list(root.id,"").unwrap().is_some_and(|listing|listing.photos.len()==1));
+        fs::remove_file(source.join("new.png")).unwrap();
+        wait(&||library.0.index.list(root.id,"").unwrap().is_some_and(|listing|listing.photos.is_empty()));
+    }
 }

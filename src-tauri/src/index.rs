@@ -228,16 +228,17 @@ impl Index {
             Self::delete_subtree(&transaction,id,&path)?;
             invalidated.push(path);
         }
+        {
+        let mut upsert = transaction.prepare_cached("INSERT INTO entries(root,path,parent,name,is_dir,bytes,modified,stamp,width,height,metadata) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11) ON CONFLICT(root,path) DO UPDATE SET parent=excluded.parent,name=excluded.name,is_dir=excluded.is_dir,bytes=excluded.bytes,modified=excluded.modified,stamp=excluded.stamp,width=excluded.width,height=excluded.height,metadata=excluded.metadata").map_err(db_error)?;
         for entry in changes {
             if existing.get(&entry.name).is_some_and(|(kind,_)| *kind != entry.is_dir) {
                 Self::delete_subtree(&transaction,id,&entry.path)?;
             }
             let metadata = entry.metadata.as_ref();
             let json = metadata.map(serde_json::to_string).transpose().map_err(|_| "Cannot store picture metadata.")?;
-            transaction.execute("INSERT INTO entries(root,path,parent,name,is_dir,bytes,modified,stamp,width,height,metadata) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)
-                ON CONFLICT(root,path) DO UPDATE SET parent=excluded.parent,name=excluded.name,is_dir=excluded.is_dir,bytes=excluded.bytes,modified=excluded.modified,stamp=excluded.stamp,width=excluded.width,height=excluded.height,metadata=excluded.metadata",
-                params![id,entry.path,parent,entry.name,entry.is_dir,entry.bytes as i64,entry.modified as i64,entry.stamp,metadata.and_then(|value| value.width),metadata.and_then(|value| value.height),json]).map_err(db_error)?;
+            upsert.execute(params![id,entry.path,parent,entry.name,entry.is_dir,entry.bytes as i64,entry.modified as i64,entry.stamp,metadata.and_then(|value| value.width),metadata.and_then(|value| value.height),json]).map_err(db_error)?;
             if existing.contains_key(&entry.name) { invalidated.push(entry.path); }
+        }
         }
         if changed {
             transaction.execute("UPDATE revision_sequence SET value=value+1 WHERE id=1", []).map_err(db_error)?;
