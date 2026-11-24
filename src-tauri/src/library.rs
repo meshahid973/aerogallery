@@ -56,8 +56,15 @@ impl Permit {
     fn acquire(counter: &Arc<AtomicUsize>, limit: usize) -> Result<Self, String> {
         let mut count = counter.load(Ordering::Relaxed);
         loop {
-            if count >= limit { return Err("Please try again in a moment.".into()); }
-            match counter.compare_exchange_weak(count, count + 1, Ordering::AcqRel, Ordering::Relaxed) {
+            if count >= limit {
+                return Err("Please try again in a moment.".into());
+            }
+            match counter.compare_exchange_weak(
+                count,
+                count + 1,
+                Ordering::AcqRel,
+                Ordering::Relaxed,
+            ) {
                 Ok(_) => break,
                 Err(actual) => count = actual,
             }
@@ -317,10 +324,22 @@ impl Library {
         Permit::acquire(&self.0.viewing, 1)
     }
 
-    pub fn full_image(&self, id: u32, parts: &[String], expected_stamp: &str) -> Result<Vec<u8>, String> {
+    pub fn full_image(
+        &self,
+        id: u32,
+        parts: &[String],
+        expected_stamp: &str,
+    ) -> Result<Vec<u8>, String> {
         let path = self.resolved(id, parts)?;
-        let stamp = || fs::symlink_metadata(&path).ok().filter(|meta| meta.is_file() && !is_link(meta)).map(|meta| fingerprint(&meta).0);
-        if stamp().as_deref() != Some(expected_stamp) { return Err("Picture changed. Refresh the folder.".into()); }
+        let stamp = || {
+            fs::symlink_metadata(&path)
+                .ok()
+                .filter(|meta| meta.is_file() && !is_link(meta))
+                .map(|meta| fingerprint(&meta).0)
+        };
+        if stamp().as_deref() != Some(expected_stamp) {
+            return Err("Picture changed. Refresh the folder.".into());
+        }
         let bytes = imaging::full_image(&path)?;
         if self.resolved(id, parts)? != path || stamp().as_deref() != Some(expected_stamp) {
             return Err("Picture changed while opening.".into());
@@ -771,16 +790,20 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let source = temp.path().join("pictures");
         fs::create_dir_all(&source).unwrap();
-        DynamicImage::new_rgb8(640,480).save(source.join("photo.png")).unwrap();
+        DynamicImage::new_rgb8(640, 480)
+            .save(source.join("photo.png"))
+            .unwrap();
         let (library, _receiver) = Library::initialize(&temp.path().join("data")).unwrap();
         let root = library.add(source).unwrap();
-        let listing = library.list(root.id,&[],true).unwrap();
+        let listing = library.list(root.id, &[], true).unwrap();
         let photo = &listing.photos[0];
         let parts = vec![photo.name.clone()];
-        assert!(library.full_image(root.id,&parts,&photo.stamp).is_ok());
-        assert!(library.full_image(root.id,&parts,"stale").is_err());
-        assert!(library.full_image(root.id,&["..".into()],&photo.stamp).is_err());
+        assert!(library.full_image(root.id, &parts, &photo.stamp).is_ok());
+        assert!(library.full_image(root.id, &parts, "stale").is_err());
+        assert!(library
+            .full_image(root.id, &["..".into()], &photo.stamp)
+            .is_err());
         library.remove(root.id).unwrap();
-        assert!(library.full_image(root.id,&parts,&photo.stamp).is_err());
+        assert!(library.full_image(root.id, &parts, &photo.stamp).is_err());
     }
 }

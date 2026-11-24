@@ -210,9 +210,15 @@ pub fn thumbnail(path: &Path) -> Result<Vec<u8>, String> {
 pub fn full_image(path: &Path) -> Result<Vec<u8>, String> {
     let file = open_checked(path)?;
     let mut bytes = Vec::new();
-    file.take(MAX_FILE_BYTES + 1).read_to_end(&mut bytes).map_err(|_| "Cannot read picture.")?;
-    if bytes.len() as u64 > MAX_FILE_BYTES { return Err("Picture exceeds the 64 MiB file limit.".into()); }
-    let mut reader = ImageReader::new(Cursor::new(bytes.as_slice())).with_guessed_format().map_err(|_| "Cannot identify picture.")?;
+    file.take(MAX_FILE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| "Cannot read picture.")?;
+    if bytes.len() as u64 > MAX_FILE_BYTES {
+        return Err("Picture exceeds the 64 MiB file limit.".into());
+    }
+    let mut reader = ImageReader::new(Cursor::new(bytes.as_slice()))
+        .with_guessed_format()
+        .map_err(|_| "Cannot identify picture.")?;
     if reader.format().is_none() {
         reader.set_format(ImageFormat::from_path(path).map_err(|_| "Unsupported picture format.")?);
     }
@@ -222,18 +228,30 @@ pub fn full_image(path: &Path) -> Result<Vec<u8>, String> {
     limits.max_image_height = Some(16_384);
     limits.max_alloc = Some(MAX_DECODE_BYTES);
     reader.limits(limits);
-    let mut decoder = reader.into_decoder().map_err(|_| "Unsupported or damaged picture.")?;
+    let mut decoder = reader
+        .into_decoder()
+        .map_err(|_| "Unsupported or damaged picture.")?;
     let (width, height) = decoder.dimensions();
     let pixels = u64::from(width) * u64::from(height);
     if pixels == 0 || pixels > MAX_PIXELS || decoder.total_bytes() > MAX_DECODE_BYTES {
         return Err("Picture exceeds the full-resolution memory limit.".into());
     }
-    let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
-    if matches!(format, Some(ImageFormat::Jpeg | ImageFormat::Png | ImageFormat::WebP)) && orientation == image::metadata::Orientation::NoTransforms {
+    let orientation = decoder
+        .orientation()
+        .unwrap_or(image::metadata::Orientation::NoTransforms);
+    if matches!(
+        format,
+        Some(ImageFormat::Jpeg | ImageFormat::Png | ImageFormat::WebP)
+    ) && orientation == image::metadata::Orientation::NoTransforms
+    {
         drop(decoder);
         return Ok(bytes);
     }
-    if (bytes.len() as u64).saturating_add(decoder.total_bytes()).saturating_add(pixels * 8) > MAX_WORKING_BYTES {
+    if (bytes.len() as u64)
+        .saturating_add(decoder.total_bytes())
+        .saturating_add(pixels * 8)
+        > MAX_WORKING_BYTES
+    {
         return Err("Picture exceeds the full-resolution memory limit.".into());
     }
     let mut image = DynamicImage::from_decoder(decoder).map_err(|_| "Cannot decode picture.")?;
@@ -242,7 +260,14 @@ pub fn full_image(path: &Path) -> Result<Vec<u8>, String> {
     let mut output = LimitedOutput(Vec::new());
     let rgba = image.into_rgba8();
     use image::ImageEncoder;
-    image::codecs::png::PngEncoder::new(&mut output).write_image(rgba.as_raw(), rgba.width(), rgba.height(), image::ExtendedColorType::Rgba8).map_err(|_| "Cannot encode full-resolution picture within the memory limit.")?;
+    image::codecs::png::PngEncoder::new(&mut output)
+        .write_image(
+            rgba.as_raw(),
+            rgba.width(),
+            rgba.height(),
+            image::ExtendedColorType::Rgba8,
+        )
+        .map_err(|_| "Cannot encode full-resolution picture within the memory limit.")?;
     Ok(output.0)
 }
 
@@ -256,7 +281,9 @@ impl Write for LimitedOutput {
         self.0.extend_from_slice(data);
         Ok(data.len())
     }
-    fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -342,8 +369,10 @@ mod tests {
             let path = fs::canonicalize(path).unwrap();
             let bytes = full_image(&path).unwrap();
             let decoded = image::load_from_memory(&bytes).unwrap();
-            assert_eq!((decoded.width(), decoded.height()), (1280,720));
-            if !name.ends_with(".bmp") { assert_eq!(bytes,fs::read(path).unwrap()); }
+            assert_eq!((decoded.width(), decoded.height()), (1280, 720));
+            if !name.ends_with(".bmp") {
+                assert_eq!(bytes, fs::read(path).unwrap());
+            }
         }
     }
 }

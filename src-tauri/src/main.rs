@@ -106,18 +106,29 @@ async fn thumbnail(
 }
 
 #[tauri::command]
-async fn full_image(root_id: u32, parts: Vec<String>, stamp: String, state: State<'_, Library>) -> Result<Response, String> {
+async fn full_image(
+    root_id: u32,
+    parts: Vec<String>,
+    stamp: String,
+    state: State<'_, Library>,
+) -> Result<Response, String> {
     let library = state.inner().clone();
     let permit = library.view_permit()?;
     tauri::async_runtime::spawn_blocking(move || {
         let _permit = permit;
-        library.full_image(root_id, &parts, &stamp).map(Response::new)
-    }).await.map_err(|_| "Cannot open full-resolution picture.".to_string())?
+        library
+            .full_image(root_id, &parts, &stamp)
+            .map(Response::new)
+    })
+    .await
+    .map_err(|_| "Cannot open full-resolution picture.".to_string())?
 }
 
 #[tauri::command]
 fn viewer_fullscreen(window: tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
-    window.set_fullscreen(enabled).map_err(|_| "Cannot change fullscreen mode.".to_string())
+    window
+        .set_fullscreen(enabled)
+        .map_err(|_| "Cannot change fullscreen mode.".to_string())
 }
 
 fn main() {
