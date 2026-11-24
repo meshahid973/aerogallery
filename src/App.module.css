@@ -72,3 +72,5 @@
 .appearance:popover-open { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 20px); }
 .preferenceError { flex-basis: 100%; color: var(--error); }
 @media (max-width: 720px) { .workspace { grid-template-columns: 150px minmax(0, 1fr); } }
+
+.shell:has(dialog[open]) > .commands { visibility: hidden; }

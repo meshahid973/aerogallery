@@ -5,9 +5,21 @@ import type { Folder } from '../../lib/desktop';
 type Job = { run: () => Promise<void>; started: boolean };
 const queue: Job[] = [];
 let running = 0;
+let suspended = 0;
+
+export function suspendThumbnailQueue() {
+  suspended += 1;
+  let resumed = false;
+  return () => {
+    if (resumed) return;
+    resumed = true;
+    suspended -= 1;
+    drain();
+  };
+}
 
 function drain() {
-  while (running < 2 && queue.length) {
+  while (!suspended && running < 2 && queue.length) {
     const job = queue.shift();
     if (!job) continue;
     job.started = true;

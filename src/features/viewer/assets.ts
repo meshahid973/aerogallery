@@ -32,6 +32,10 @@ function mime(buffer: ArrayBuffer) {
 export function useViewerAsset(folder: Folder, photo: Photo | undefined, next: Photo | undefined, previous: Photo | undefined, retry: number) {
   const cache = useRef(new Map<string, ViewerAsset>());
   const [result, setResult] = useState<Result>({ key: '' });
+  const pending = useRef(new Map<string, Promise<ArrayBuffer>>());
+  const wanted = useRef(new Set<string>());
+  const generation = useRef(0);
+  const lastRetry = useRef(retry);
   const currentKey = photoKey(photo);
   const nextKey = photoKey(next);
   const previousKey = photoKey(previous);
@@ -41,6 +45,9 @@ export function useViewerAsset(folder: Folder, photo: Photo | undefined, next: P
   useEffect(() => {
     const assets = cache.current;
     return () => {
+      generation.current += 1;
+      wanted.current.clear();
+      pending.current.clear();
       for (const asset of assets.values()) URL.revokeObjectURL(asset.url);
       assets.clear();
     };
@@ -50,6 +57,14 @@ export function useViewerAsset(folder: Folder, photo: Photo | undefined, next: P
     let active = true;
     const assets = cache.current;
     const keep = new Set([currentKey, nextKey, previousKey]);
+    wanted.current = keep;
+    const session = generation.current;
+    if (lastRetry.current !== retry) {
+      lastRetry.current = retry;
+      const failedAsset = assets.get(currentKey);
+      if (failedAsset) URL.revokeObjectURL(failedAsset.url);
+      assets.delete(currentKey);
+    }
     for (const [key, asset] of assets) {
       if (!keep.has(key)) { URL.revokeObjectURL(asset.url); assets.delete(key); }
     }
@@ -62,8 +77,17 @@ export function useViewerAsset(folder: Folder, photo: Photo | undefined, next: P
       const key = photoKey(item);
       const existing = assets.get(key);
       if (existing) return existing;
-      const bytes = await serializeRead(folder, item, () => active);
+      let request = pending.current.get(key);
+      if (!request) {
+        request = serializeRead(folder, item, () => generation.current === session && wanted.current.has(key));
+        pending.current.set(key, request);
+        const clear = () => { if (pending.current.get(key) === request) pending.current.delete(key); };
+        void request.then(clear, clear);
+      }
+      const bytes = await request;
       if (!active) return;
+      const reused = assets.get(key);
+      if (reused) return reused;
       let used = [...assets.values()].reduce((sum, asset) => sum + asset.bytes, 0);
       if (foreground) {
         for (const [otherKey, asset] of assets) {
@@ -101,5 +125,5 @@ export function useViewerAsset(folder: Folder, photo: Photo | undefined, next: P
     return () => { active = false; };
   }, [folder, currentKey, nextKey, previousKey, retry]);
 
-  return result.key === currentKey ? result : { key: currentKey };
+  return result.key === currentKey ? result : { key: currentKey } as Result;
 }

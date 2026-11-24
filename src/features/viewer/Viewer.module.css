@@ -18,7 +18,7 @@
 .heading { flex: 0 0 auto; min-height: 40px; padding: 4px 10px; gap: 8px; border-bottom: 1px solid var(--line); }
 .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .counter { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.surface { position: relative; flex: 1; min-height: 0; min-width: 0; overflow: hidden; background: #edf3f7; }
+.surface { position: relative; flex: 1; min-height: 0; min-width: 0; overflow: hidden; background: var(--viewer-surface, #edf3f7); }
 .stage { position: absolute; inset: 0; overflow: hidden; touch-action: none; user-select: none; }
 .stage[data-ready="true"] { cursor: grab; }
 .stage:active { cursor: grabbing; }
