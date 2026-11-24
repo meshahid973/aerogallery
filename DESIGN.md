@@ -9,3 +9,5 @@ Reference: [original Windows Photo Gallery screenshot](https://betawiki.net/wiki
 Native window decorations remain system-owned. Windows uses native Acrylic behind the translucent command band, with an opaque fallback on other platforms and reduced-transparency mode. No nested window frame, decorative wallpaper, or full-window CSS blur. The gallery, sidebar and footer remain opaque with single separators. Loading belongs in the status strip only. Preserve keyboard focus, reduced motion/transparency and high-contrast support. New photo features should reuse the existing shell.
 
 Keep the photo grid virtualized with a bounded viewport window; do not add pagination controls or eagerly decode off-screen images. Preserve selection and scroll during filesystem updates.
+
+The viewer uses a single photo stage and a compact glossy playback strip based on Windows Photo Gallery. Use existing glass and control materials, period Tango playback icons and simple functional glyphs; no secondary framed window. Rotation is a view transform only. Fullscreen uses native window controls and restores the gallery on exit.

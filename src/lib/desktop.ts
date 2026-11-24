@@ -51,3 +51,7 @@ export const readThumbnail = (folder: Folder, name: string) =>
   invoke<ArrayBuffer>('thumbnail', { rootId: folder.rootId, parts: [...folder.parts, name] });
 export const readMetadata = (folder: Folder, name: string) =>
   invoke<PhotoMetadata | null>('photo_metadata', { rootId: folder.rootId, parts: [...folder.parts, name] });
+
+export const readFullImage = (folder: Folder, photo: Photo) =>
+  invoke<ArrayBuffer>('full_image', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp });
+export const setViewerFullscreen = (enabled: boolean) => invoke<void>('viewer_fullscreen', { enabled });

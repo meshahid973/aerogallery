@@ -4,7 +4,7 @@ use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader, Limits};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
-    io::{BufReader, Cursor, Seek, SeekFrom},
+    io::{BufReader, Cursor, Read, Seek, SeekFrom, Write},
     path::Path,
 };
 
@@ -207,6 +207,58 @@ pub fn thumbnail(path: &Path) -> Result<Vec<u8>, String> {
     Ok(output.into_inner())
 }
 
+pub fn full_image(path: &Path) -> Result<Vec<u8>, String> {
+    let file = open_checked(path)?;
+    let mut bytes = Vec::new();
+    file.take(MAX_FILE_BYTES + 1).read_to_end(&mut bytes).map_err(|_| "Cannot read picture.")?;
+    if bytes.len() as u64 > MAX_FILE_BYTES { return Err("Picture exceeds the 64 MiB file limit.".into()); }
+    let mut reader = ImageReader::new(Cursor::new(bytes.as_slice())).with_guessed_format().map_err(|_| "Cannot identify picture.")?;
+    if reader.format().is_none() {
+        reader.set_format(ImageFormat::from_path(path).map_err(|_| "Unsupported picture format.")?);
+    }
+    let format = reader.format();
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(16_384);
+    limits.max_image_height = Some(16_384);
+    limits.max_alloc = Some(MAX_DECODE_BYTES);
+    reader.limits(limits);
+    let mut decoder = reader.into_decoder().map_err(|_| "Unsupported or damaged picture.")?;
+    let (width, height) = decoder.dimensions();
+    let pixels = u64::from(width) * u64::from(height);
+    if pixels == 0 || pixels > MAX_PIXELS || decoder.total_bytes() > MAX_DECODE_BYTES {
+        return Err("Picture exceeds the full-resolution memory limit.".into());
+    }
+    let orientation = decoder.orientation().unwrap_or(image::metadata::Orientation::NoTransforms);
+    if matches!(format, Some(ImageFormat::Jpeg | ImageFormat::Png | ImageFormat::WebP)) && orientation == image::metadata::Orientation::NoTransforms {
+        drop(decoder);
+        return Ok(bytes);
+    }
+    if (bytes.len() as u64).saturating_add(decoder.total_bytes()).saturating_add(pixels * 8) > MAX_WORKING_BYTES {
+        return Err("Picture exceeds the full-resolution memory limit.".into());
+    }
+    let mut image = DynamicImage::from_decoder(decoder).map_err(|_| "Cannot decode picture.")?;
+    drop(bytes);
+    image.apply_orientation(orientation);
+    let mut output = LimitedOutput(Vec::new());
+    let rgba = image.into_rgba8();
+    use image::ImageEncoder;
+    image::codecs::png::PngEncoder::new(&mut output).write_image(rgba.as_raw(), rgba.width(), rgba.height(), image::ExtendedColorType::Rgba8).map_err(|_| "Cannot encode full-resolution picture within the memory limit.")?;
+    Ok(output.0)
+}
+
+struct LimitedOutput(Vec<u8>);
+
+impl Write for LimitedOutput {
+    fn write(&mut self, data: &[u8]) -> std::io::Result<usize> {
+        if self.0.len().saturating_add(data.len()) > MAX_FILE_BYTES as usize {
+            return Err(std::io::Error::other("Full-resolution output limit"));
+        }
+        self.0.extend_from_slice(data);
+        Ok(data.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,6 +331,19 @@ mod tests {
             let path = fs::canonicalize(path).unwrap();
             let preview = image::load_from_memory(&thumbnail(&path).unwrap()).unwrap();
             assert_eq!((preview.width(), preview.height()), (64, 48), "{name}");
+        }
+    }
+    #[test]
+    fn full_image_preserves_original_resolution_and_png_bytes() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["original.png", "original.bmp", "original.jpg"] {
+            let path = dir.path().join(name);
+            DynamicImage::new_rgb8(1280, 720).save(&path).unwrap();
+            let path = fs::canonicalize(path).unwrap();
+            let bytes = full_image(&path).unwrap();
+            let decoded = image::load_from_memory(&bytes).unwrap();
+            assert_eq!((decoded.width(), decoded.height()), (1280,720));
+            if !name.ends_with(".bmp") { assert_eq!(bytes,fs::read(path).unwrap()); }
         }
     }
 }

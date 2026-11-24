@@ -8,6 +8,8 @@ fn main() {
             "photo_metadata",
             "remove_root",
             "thumbnail",
+            "full_image",
+            "viewer_fullscreen",
         ]),
     ))
     .expect("failed to build AeroGallery");

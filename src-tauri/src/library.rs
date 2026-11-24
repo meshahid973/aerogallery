@@ -37,6 +37,7 @@ struct Inner {
     picker: Arc<AtomicUsize>,
     listing: Arc<AtomicUsize>,
     decoding: Arc<AtomicUsize>,
+    viewing: Arc<AtomicUsize>,
     scan_locks: Vec<Mutex<()>>,
     cache_write: Mutex<()>,
     cache: Mutex<MemoryCache>,
@@ -53,11 +54,14 @@ pub struct Permit(Arc<AtomicUsize>);
 
 impl Permit {
     fn acquire(counter: &Arc<AtomicUsize>, limit: usize) -> Result<Self, String> {
-        counter
-            .fetch_update(Ordering::AcqRel, Ordering::Relaxed, |count| {
-                (count < limit).then_some(count + 1)
-            })
-            .map_err(|_| "Please try again in a moment.".to_string())?;
+        let mut count = counter.load(Ordering::Relaxed);
+        loop {
+            if count >= limit { return Err("Please try again in a moment.".into()); }
+            match counter.compare_exchange_weak(count, count + 1, Ordering::AcqRel, Ordering::Relaxed) {
+                Ok(_) => break,
+                Err(actual) => count = actual,
+            }
+        }
         Ok(Self(counter.clone()))
     }
 }
@@ -158,6 +162,7 @@ impl Library {
                 picker: Arc::new(AtomicUsize::new(0)),
                 listing: Arc::new(AtomicUsize::new(0)),
                 decoding: Arc::new(AtomicUsize::new(0)),
+                viewing: Arc::new(AtomicUsize::new(0)),
                 scan_locks: (0..64).map(|_| Mutex::new(())).collect(),
                 cache_write: Mutex::new(()),
                 cache: Mutex::new(MemoryCache::default()),
@@ -306,6 +311,21 @@ impl Library {
             return Ok(None);
         }
         Ok(Some(self.0.pool.install(|| imaging::metadata(&path))))
+    }
+
+    pub fn view_permit(&self) -> Result<Permit, String> {
+        Permit::acquire(&self.0.viewing, 1)
+    }
+
+    pub fn full_image(&self, id: u32, parts: &[String], expected_stamp: &str) -> Result<Vec<u8>, String> {
+        let path = self.resolved(id, parts)?;
+        let stamp = || fs::symlink_metadata(&path).ok().filter(|meta| meta.is_file() && !is_link(meta)).map(|meta| fingerprint(&meta).0);
+        if stamp().as_deref() != Some(expected_stamp) { return Err("Picture changed. Refresh the folder.".into()); }
+        let bytes = imaging::full_image(&path)?;
+        if self.resolved(id, parts)? != path || stamp().as_deref() != Some(expected_stamp) {
+            return Err("Picture changed while opening.".into());
+        }
+        Ok(bytes)
     }
 
     pub fn thumbnail(&self, id: u32, parts: &[String]) -> Result<Vec<u8>, String> {
@@ -745,5 +765,22 @@ mod tests {
         assert_eq!(enriched.photos[0].width, Some(80));
         assert!(enriched.revision > initial.revision);
         assert_eq!(initial.photos[0].stamp, enriched.photos[0].stamp);
+    }
+    #[test]
+    fn full_image_requires_current_scoped_stamp() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("pictures");
+        fs::create_dir_all(&source).unwrap();
+        DynamicImage::new_rgb8(640,480).save(source.join("photo.png")).unwrap();
+        let (library, _receiver) = Library::initialize(&temp.path().join("data")).unwrap();
+        let root = library.add(source).unwrap();
+        let listing = library.list(root.id,&[],true).unwrap();
+        let photo = &listing.photos[0];
+        let parts = vec![photo.name.clone()];
+        assert!(library.full_image(root.id,&parts,&photo.stamp).is_ok());
+        assert!(library.full_image(root.id,&parts,"stale").is_err());
+        assert!(library.full_image(root.id,&["..".into()],&photo.stamp).is_err());
+        library.remove(root.id).unwrap();
+        assert!(library.full_image(root.id,&parts,&photo.stamp).is_err());
     }
 }

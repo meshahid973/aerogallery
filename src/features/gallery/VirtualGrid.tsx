@@ -9,7 +9,7 @@ const TILE_WIDTHS = [104, 142, 206] as const;
 const GAP = 8;
 const OVERSCAN = 2;
 
-const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selected, tabbable, onSelect }: {
+const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selected, tabbable, onSelect, onOpen }: {
   folder: Folder;
   photo: Photo;
   index: number;
@@ -17,11 +17,12 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   selected: boolean;
   tabbable: boolean;
   onSelect: (name: string) => void;
+  onOpen: (name: string) => void;
 }) {
   const { ref, url, failed } = useThumbnail(folder, photo.name);
   return (
     <li className={styles.photoCell} aria-posinset={index + 1} aria-setsize={total}>
-      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} title={failed ? `${photo.name} — preview unavailable` : photo.name}>
+      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} title={failed ? `${photo.name} — preview unavailable` : photo.name}>
         <span className={styles.imageFrame} ref={ref}>
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" /> : <AeroIcon name="picture" size={40} />}
         </span>
@@ -31,12 +32,13 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   );
 });
 
-export function VirtualGrid({ folder, photos, selected, size, onSelect, error, busy }: {
+export function VirtualGrid({ folder, photos, selected, size, onSelect, onOpen, error, busy }: {
   folder: Folder;
   photos: Photo[];
   selected: string | null;
   size: number;
   onSelect: (name: string) => void;
+  onOpen: (name: string) => void;
   error: string;
   busy: boolean;
 }) {
@@ -109,6 +111,7 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, error, b
     const target = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-photo-index]');
     const current = Number(target?.dataset.photoIndex);
     if (!target || !Number.isInteger(current)) return;
+    if (event.key === 'Enter') { const photo = photos[current]; if (photo) { event.preventDefault(); onOpen(photo.name); } return; }
     const steps: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns, PageUp: -Math.max(1, Math.floor(metrics.height / stride)) * columns, PageDown: Math.max(1, Math.floor(metrics.height / stride)) * columns };
     if (!Object.hasOwn(steps, event.key) && event.key !== 'Home' && event.key !== 'End') return;
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? photos.length - 1 : Math.max(0, Math.min(photos.length - 1, current + (steps[event.key] ?? 0)));
@@ -138,7 +141,7 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, error, b
         paddingTop: start * stride,
         paddingBottom: Math.max(0, rows - Math.max(start + 1, end)) * stride,
       }} onKeyDown={navigate} aria-label="Picture thumbnails">
-        {photos.slice(first, last).map((photo, offset) => <PhotoTile key={`${photo.name}:${photo.stamp}`} folder={folder} photo={photo} index={first + offset} total={photos.length} selected={photo.name === selected} tabbable={first + offset === tabIndex} onSelect={onSelect} />)}
+        {photos.slice(first, last).map((photo, offset) => <PhotoTile key={`${photo.name}:${photo.stamp}`} folder={folder} photo={photo} index={first + offset} total={photos.length} selected={photo.name === selected} tabbable={first + offset === tabIndex} onSelect={onSelect} onOpen={onOpen} />)}
       </ul>
     </div>
   );
