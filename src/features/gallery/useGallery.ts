@@ -10,6 +10,9 @@ export function useGallery() {
   const [active, setActive] = useState<Folder | null>(null);
   const activeKey = useRef<string | null>(null);
   const activeRevision = useRef<number | null>(null);
+  const history = useRef<Folder[]>([]);
+  const lastLoaded = useRef<Folder | null>(null);
+  const [canBack, setCanBack] = useState(false);
   const [listing, setListing] = useState<Listing | null>(null);
   const [tree, setTree] = useState<TreeState>({ cache: new Map(), expanded: new Set() });
   const [busy, setBusy] = useState(isDesktop);
@@ -47,7 +50,7 @@ export function useGallery() {
     setListing(result);
   }, []);
 
-  const load = useCallback(async (folder: Folder, refresh = false) => {
+  const load = useCallback(async (folder: Folder, refresh = false, record = true) => {
     const key = folderKey(folder);
     if (activeKey.current !== key) {
       activeKey.current = key;
@@ -56,6 +59,11 @@ export function useGallery() {
       setListing(null);
     }
     const result = await readFolder(folder, refresh);
+    if (record && lastLoaded.current && folderKey(lastLoaded.current) !== key) {
+      history.current = [...history.current.slice(-63), lastLoaded.current];
+      setCanBack(true);
+    }
+    lastLoaded.current = folder;
     apply(folder, result);
   }, [apply]);
 
@@ -121,6 +129,11 @@ export function useGallery() {
 
   const select = (folder: Folder) => execute(() => load(folder));
   const refresh = () => execute(async () => { if (active) await load(active, true); });
+  const back = () => execute(async () => {
+    const previous = history.current.pop();
+    setCanBack(history.current.length > 0);
+    if (previous) await load(previous, false, false);
+  });
 
   const add = () => execute(async () => {
     const root = await pickFolder();
@@ -146,6 +159,9 @@ export function useGallery() {
     await removeRoot(id);
     const remaining = roots.filter((root) => root.id !== id);
     setRoots(remaining);
+    history.current = history.current.filter((folder) => folder.rootId !== id);
+    setCanBack(history.current.length > 0);
+    lastLoaded.current = null;
     activeKey.current = null;
     activeRevision.current = null;
     setActive(null);
@@ -158,5 +174,5 @@ export function useGallery() {
     if (remaining[0]) await load(rootFolder(remaining[0]));
   });
 
-  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy: busy || initializing, error, add, select, refresh, toggle, remove };
+  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy: busy || initializing, error, canBack, back, add, select, refresh, toggle, remove };
 }

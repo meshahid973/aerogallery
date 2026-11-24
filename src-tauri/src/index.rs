@@ -462,38 +462,80 @@ impl Index {
         Ok((folders, invalidated))
     }
 
-    pub fn enrich(&self, id: u32, parent: &str, directory: &Path, pool: &rayon::ThreadPool) -> Result<(), String> {
+    pub fn enrich(
+        &self,
+        id: u32,
+        parent: &str,
+        directory: &Path,
+        pool: &rayon::ThreadPool,
+    ) -> Result<(), String> {
         loop {
             let batch: Vec<(String, String, String)> = {
                 let connection = self.lock()?;
                 let mut statement = connection.prepare_cached("SELECT path,name,stamp FROM entries WHERE root=?1 AND parent=?2 AND is_dir=0 AND metadata IS NULL ORDER BY path LIMIT 64").map_err(db_error)?;
-                let rows = statement.query_map(params![id,parent], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).map_err(db_error)?;
-                rows.collect::<rusqlite::Result<Vec<_>>>().map_err(db_error)?
+                let rows = statement
+                    .query_map(params![id, parent], |row| {
+                        Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+                    })
+                    .map_err(db_error)?;
+                rows.collect::<rusqlite::Result<Vec<_>>>()
+                    .map_err(db_error)?
             };
-            if batch.is_empty() { return Ok(()); }
-            let results: Vec<_> = pool.install(|| batch.into_par_iter().map(|(path,name,stamp)| {
-                let file=directory.join(name);
-                let current=|| fs::symlink_metadata(&file).is_ok_and(|meta| !is_link(&meta) && fingerprint(&meta).0==stamp);
-                let metadata=if current() { imaging::metadata(&file) } else { PhotoMetadata::default() };
-                (path,stamp,metadata,current())
-            }).collect());
-            let mut connection=self.lock()?;
-            let transaction=connection.transaction().map_err(db_error)?;
-            let mut updated=0;
+            if batch.is_empty() {
+                return Ok(());
+            }
+            let results: Vec<_> = pool.install(|| {
+                batch
+                    .into_par_iter()
+                    .map(|(path, name, stamp)| {
+                        let file = directory.join(name);
+                        let current = || {
+                            fs::symlink_metadata(&file)
+                                .is_ok_and(|meta| !is_link(&meta) && fingerprint(&meta).0 == stamp)
+                        };
+                        let metadata = if current() {
+                            imaging::metadata(&file)
+                        } else {
+                            PhotoMetadata::default()
+                        };
+                        let unchanged = current();
+                        (path, stamp, metadata, unchanged)
+                    })
+                    .collect()
+            });
+            let mut connection = self.lock()?;
+            let transaction = connection.transaction().map_err(db_error)?;
+            let mut updated = 0;
             {
                 let mut statement=transaction.prepare_cached("UPDATE entries SET width=?4,height=?5,metadata=?6 WHERE root=?1 AND path=?2 AND stamp=?3 AND metadata IS NULL").map_err(db_error)?;
-                for (path,stamp,metadata,current) in results {
-                    if !current { continue; }
-                    let json=serde_json::to_string(&metadata).map_err(|_|"Cannot store picture metadata.")?;
-                    updated+=statement.execute(params![id,path,stamp,metadata.width,metadata.height,json]).map_err(db_error)?;
+                for (path, stamp, metadata, current) in results {
+                    if !current {
+                        continue;
+                    }
+                    let json = serde_json::to_string(&metadata)
+                        .map_err(|_| "Cannot store picture metadata.")?;
+                    updated += statement
+                        .execute(params![
+                            id,
+                            path,
+                            stamp,
+                            metadata.width,
+                            metadata.height,
+                            json
+                        ])
+                        .map_err(db_error)?;
                 }
             }
-            if updated>0 {
-                transaction.execute("UPDATE revision_sequence SET value=value+1 WHERE id=1", []).map_err(db_error)?;
+            if updated > 0 {
+                transaction
+                    .execute("UPDATE revision_sequence SET value=value+1 WHERE id=1", [])
+                    .map_err(db_error)?;
                 transaction.execute("UPDATE directories SET revision=(SELECT value FROM revision_sequence WHERE id=1) WHERE root=?1 AND path=?2",params![id,parent]).map_err(db_error)?;
             }
             transaction.commit().map_err(db_error)?;
-            if updated==0 { return Ok(()); }
+            if updated == 0 {
+                return Ok(());
+            }
             std::thread::yield_now();
         }
     }

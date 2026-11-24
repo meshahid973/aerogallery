@@ -12,7 +12,6 @@
   --line-strong: #52758e;
   --focus: #005da6;
   --glass-density: .77;
-  --glass-fallback: #deeff8;
   --glass-tint: 215, 237, 249;
   --glass-highlight: linear-gradient(180deg, #ffffffa6, #ffffff24 47%, #79bde51c 49%, #edfaff42);
   --radius-control: 4px;

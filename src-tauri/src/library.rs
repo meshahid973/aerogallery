@@ -245,10 +245,7 @@ impl Library {
         let lock = &self.0.scan_locks[(hasher.finish() % self.0.scan_locks.len() as u64) as usize];
         let _guard = lock.lock().map_err(lock_error)?;
         let directory = self.resolved(id, parts)?;
-        let (folders, invalidated) =
-            self.0
-                .index
-                .scan(id, &relative, &directory, &self.0.data)?;
+        let (folders, invalidated) = self.0.index.scan(id, &relative, &directory, &self.0.data)?;
         drop(_guard);
         if !invalidated.is_empty() {
             let matches = |key: &CacheKey| {
@@ -302,8 +299,12 @@ impl Library {
 
     pub fn metadata(&self, id: u32, parts: &[String]) -> Result<Option<PhotoMetadata>, String> {
         let path = self.resolved(id, parts)?;
-        if let Some(metadata) = self.0.index.metadata(id, &paths::relative(parts)?)? { return Ok(Some(metadata)); }
-        if !paths::allowed_photo(&path) { return Ok(None); }
+        if let Some(metadata) = self.0.index.metadata(id, &paths::relative(parts)?)? {
+            return Ok(Some(metadata));
+        }
+        if !paths::allowed_photo(&path) {
+            return Ok(None);
+        }
         Ok(Some(self.0.pool.install(|| imaging::metadata(&path))))
     }
 
@@ -379,7 +380,10 @@ impl Library {
                     .into_par_iter()
                     .map(|parts| {
                         let folders = match self.scan_one(source.root.id, &parts) {
-                            Ok(folders) => { self.enrich_folder(source.root.id, &parts); folders },
+                            Ok(folders) => {
+                                self.enrich_folder(source.root.id, &parts);
+                                folders
+                            }
                             Err(_) => Vec::new(),
                         };
                         (parts, folders)
@@ -728,7 +732,9 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let source = temp.path().join("pictures");
         fs::create_dir_all(&source).unwrap();
-        DynamicImage::new_rgb8(80, 60).save(source.join("photo.png")).unwrap();
+        DynamicImage::new_rgb8(80, 60)
+            .save(source.join("photo.png"))
+            .unwrap();
         let (library, _receiver) = Library::initialize(&temp.path().join("data")).unwrap();
         let root = library.add(source).unwrap();
         let initial = library.list(root.id, &[], true).unwrap();
