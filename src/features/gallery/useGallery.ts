@@ -12,7 +12,9 @@ export function useGallery() {
   const activeRevision = useRef<number | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
   const [tree, setTree] = useState<TreeState>({ cache: new Map(), expanded: new Set() });
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(isDesktop);
+  const [initializing, setInitializing] = useState(isDesktop);
+  const actionEpoch = useRef(0);
   const [error, setError] = useState('');
   const pending = useRef(false);
 
@@ -60,6 +62,7 @@ export function useGallery() {
   const execute = useCallback(async (action: () => Promise<void>) => {
     if (!isDesktop || pending.current) return;
     pending.current = true;
+    actionEpoch.current += 1;
     setBusy(true);
     setError('');
     try {
@@ -78,10 +81,12 @@ export function useGallery() {
     void listRoots().then((items) => {
       if (!activeEffect || pending.current) return;
       setRoots(items);
+      setInitializing(false);
+      setBusy(false);
       const first = items[0];
       if (first) void execute(() => load(rootFolder(first)));
     }, () => {
-      if (activeEffect && !pending.current) setError('Cannot connect to the library.');
+      if (activeEffect && !pending.current) { setInitializing(false); setBusy(false); setError('Cannot connect to the library.'); }
     });
     return () => { activeEffect = false; };
   }, [execute, load]);
@@ -94,16 +99,17 @@ export function useGallery() {
     async function check() {
       if (stopped || running || pending.current || activeKey.current !== key || !active) return;
       running = true;
+      const epoch = actionEpoch.current;
       try {
         const revision = await folderRevision(active);
-        if (stopped || pending.current || activeKey.current !== key || revision === activeRevision.current) return;
+        if (stopped || pending.current || epoch !== actionEpoch.current || activeKey.current !== key || revision === activeRevision.current) return;
         const result = await readFolder(active);
-        if (!stopped && !pending.current && activeKey.current === key) {
+        if (!stopped && !pending.current && epoch === actionEpoch.current && activeKey.current === key) {
           apply(active, result);
           setError('');
         }
       } catch (failure) {
-        if (!stopped && !pending.current && activeKey.current === key) {
+        if (!stopped && !pending.current && epoch === actionEpoch.current && activeKey.current === key) {
           activeRevision.current = null;
           setListing(null);
           setError(typeof failure === 'string' ? failure : 'Cannot read this folder.');
@@ -153,5 +159,5 @@ export function useGallery() {
     if (remaining[0]) await load(rootFolder(remaining[0]));
   });
 
-  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy, error, add, select, refresh, toggle, remove };
+  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy: busy || initializing, error, add, select, refresh, toggle, remove };
 }

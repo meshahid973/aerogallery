@@ -24,7 +24,7 @@ pub struct PhotoMetadata {
     pub focal_length: Option<String>,
 }
 
-fn reader(path: &Path) -> Result<ImageReader<BufReader<File>>, String> {
+fn open_checked(path: &Path) -> Result<File, String> {
     let metadata = fs::symlink_metadata(path).map_err(|_| "Picture unavailable.")?;
     if !metadata.is_file() || is_link(&metadata) || !allowed_photo(path) || metadata.len() > MAX_FILE_BYTES {
         return Err("Picture unavailable or too large.".into());
@@ -34,7 +34,12 @@ fn reader(path: &Path) -> Result<ImageReader<BufReader<File>>, String> {
     if fingerprint(&metadata) != fingerprint(&opened) || opened.len() > MAX_FILE_BYTES {
         return Err("Picture changed while opening.".into());
     }
-    let mut reader = ImageReader::new(BufReader::new(file)).with_guessed_format().map_err(|_| "Picture unavailable.")?;
+    if !crate::paths::matches_open_path(&file,path) { return Err("Picture changed while opening.".into()); }
+    Ok(file)
+}
+
+fn reader(path: &Path) -> Result<ImageReader<BufReader<File>>, String> {
+    let mut reader = ImageReader::new(BufReader::new(open_checked(path)?)).with_guessed_format().map_err(|_| "Picture unavailable.")?;
     if reader.format().is_none() {
         reader.set_format(ImageFormat::from_path(path).map_err(|_| "Unsupported picture format.")?);
     }
@@ -55,8 +60,8 @@ pub fn metadata(path: &Path) -> PhotoMetadata {
             result.height = Some(height);
         }
     }
-    if fs::metadata(path).is_ok_and(|meta| meta.len() <= MAX_FILE_BYTES) {
-        if let Ok(file) = File::open(path) {
+    if let Ok(file) = open_checked(path) {
+        {
             if let Ok(exif) = exif::Reader::new().read_from_container(&mut BufReader::new(file)) {
                 let field = |tag| exif.get_field(tag, exif::In::PRIMARY);
                 let display = |tag| field(tag).map(|value| value.display_value().with_unit(&exif).to_string().chars().take(256).collect::<String>());
@@ -125,6 +130,7 @@ mod tests {
         for (name, source) in [("opaque.bmp", DynamicImage::new_rgb8(640, 480)), ("alpha.png", DynamicImage::new_rgba8(480, 640))] {
             let path = dir.path().join(name);
             source.save(&path).unwrap();
+            let path=fs::canonicalize(path).unwrap();
             let bytes = thumbnail(&path).unwrap();
             let result = image::load_from_memory(&bytes).unwrap();
             assert_eq!(result.width().max(result.height()), THUMB_EDGE);

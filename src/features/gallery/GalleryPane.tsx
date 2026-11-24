@@ -90,7 +90,7 @@ export function GalleryPane({ folder, root, listing, busy, error, sort, onSort, 
           <option value="largest">Size</option>
         </AeroSelect>
       </AeroToolbar>
-      {folder && photos.length > 0 ? <VirtualGrid key={query + sort} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} error={error} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
+      {folder && photos.length > 0 ? <VirtualGrid key={JSON.stringify([query, sort])} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} error={error} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {busy && !listing && <div className={styles.loading} role="status"><span className="aero-spinner" /> Opening folder…</div>}
         {empty && (

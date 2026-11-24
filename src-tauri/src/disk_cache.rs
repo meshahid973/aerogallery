@@ -13,6 +13,7 @@ pub struct DiskCache {
 impl DiskCache {
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         let connection = Connection::open(path)?;
+        connection.busy_timeout(std::time::Duration::from_secs(5))?;
         connection.execute_batch("
             PRAGMA auto_vacuum=INCREMENTAL;
             PRAGMA journal_mode=WAL;
@@ -75,7 +76,7 @@ impl DiskCache {
     pub fn trim(&self) -> rusqlite::Result<()> {
         let connection = self.connection.lock().map_err(|_| rusqlite::Error::InvalidQuery)?;
         Self::evict(&connection, self.max_bytes, self.max_entries)?;
-        connection.execute_batch("PRAGMA incremental_vacuum(256); PRAGMA wal_checkpoint(PASSIVE);")?;
+        connection.execute_batch("PRAGMA incremental_vacuum(1024); PRAGMA wal_checkpoint(TRUNCATE);")?;
         Ok(())
     }
 
@@ -85,10 +86,15 @@ impl DiskCache {
         Ok(())
     }
 
-    pub fn invalidate(&self, root: u32, path: &str) -> rusqlite::Result<()> {
-        let connection = self.connection.lock().map_err(|_| rusqlite::Error::InvalidQuery)?;
-        connection.execute("DELETE FROM thumbnails WHERE root=?1 AND (path=?2 OR substr(path,1,length(?2)+1)=?2||'/')", params![root,path])?;
-        Ok(())
+    pub fn invalidate_many(&self, root: u32, paths: &[String]) -> rusqlite::Result<()> {
+        let mut connection = self.connection.lock().map_err(|_| rusqlite::Error::InvalidQuery)?;
+        let transaction = connection.transaction()?;
+        {
+            let mut exact = transaction.prepare_cached("DELETE FROM thumbnails WHERE root=?1 AND path=?2")?;
+            let mut subtree = transaction.prepare_cached("DELETE FROM thumbnails WHERE root=?1 AND path>=?2||'/' AND path<?2||'0'")?;
+            for path in paths { exact.execute(params![root,path])?; subtree.execute(params![root,path])?; }
+        }
+        transaction.commit()
     }
 }
 

@@ -72,6 +72,8 @@ impl Index {
                 path TEXT NOT NULL UNIQUE,
                 name TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS revision_sequence (id INTEGER PRIMARY KEY CHECK(id=1), value INTEGER NOT NULL);
+            INSERT OR IGNORE INTO revision_sequence VALUES(1,0);
             CREATE TABLE IF NOT EXISTS directories (
                 root INTEGER NOT NULL REFERENCES roots(id) ON DELETE CASCADE,
                 path TEXT NOT NULL,
@@ -123,8 +125,8 @@ impl Index {
         if let Some(root) = transaction.query_row("SELECT id,name FROM roots WHERE path=?1", [path], |row| Ok(Root { id: row.get(0)?, name: row.get(1)? })).optional().map_err(db_error)? {
             return Ok(root);
         }
-        let count: usize = transaction.query_row("SELECT count(*) FROM roots", [], |row| row.get(0)).map_err(db_error)?;
-        if count >= MAX_ROOTS { return Err("Remove a folder before adding another.".into()); }
+        let count: i64 = transaction.query_row("SELECT count(*) FROM roots", [], |row| row.get(0)).map_err(db_error)?;
+        if count >= MAX_ROOTS as i64 { return Err("Remove a folder before adding another.".into()); }
         transaction.execute("INSERT INTO roots(path,name) VALUES(?1,?2)", params![path,name]).map_err(db_error)?;
         let id = u32::try_from(transaction.last_insert_rowid()).map_err(|_| "Too many folders.")?;
         transaction.commit().map_err(db_error)?;
@@ -142,15 +144,15 @@ impl Index {
 
     pub fn list(&self, id: u32, parent: &str) -> Result<Option<Listing>, String> {
         let connection = self.lock()?;
-        let Some((revision, skipped)) = connection.query_row("SELECT revision,skipped FROM directories WHERE root=?1 AND path=?2", params![id,parent], |row| Ok((row.get(0)?,row.get(1)?))).optional().map_err(db_error)? else { return Ok(None); };
-        let mut listing = Listing { folders: Vec::new(), photos: Vec::new(), skipped, revision };
+        let Some((revision, skipped)) = connection.query_row("SELECT revision,skipped FROM directories WHERE root=?1 AND path=?2", params![id,parent], |row| Ok((row.get::<_,i64>(0)?,row.get::<_,i64>(1)?))).optional().map_err(db_error)? else { return Ok(None); };
+        let mut listing = Listing { folders: Vec::new(), photos: Vec::new(), skipped: skipped as usize, revision };
         let mut statement = connection.prepare("SELECT name,is_dir,bytes,modified,stamp,width,height FROM entries WHERE root=?1 AND parent=?2 ORDER BY name COLLATE NOCASE").map_err(db_error)?;
         let mut rows = statement.query(params![id,parent]).map_err(db_error)?;
         while let Some(row) = rows.next().map_err(db_error)? {
             if row.get::<_,bool>(1).map_err(db_error)? {
                 listing.folders.push(row.get(0).map_err(db_error)?);
             } else {
-                listing.photos.push(Photo { name: row.get(0).map_err(db_error)?, bytes: row.get(2).map_err(db_error)?, modified: row.get(3).map_err(db_error)?, stamp: row.get(4).map_err(db_error)?, width: row.get(5).map_err(db_error)?, height: row.get(6).map_err(db_error)? });
+                listing.photos.push(Photo { name: row.get(0).map_err(db_error)?, bytes: row.get::<_,i64>(2).map_err(db_error)? as u64, modified: row.get::<_,i64>(3).map_err(db_error)? as u64, stamp: row.get(4).map_err(db_error)?, width: row.get(5).map_err(db_error)?, height: row.get(6).map_err(db_error)? });
             }
         }
         Ok(Some(listing))
@@ -187,6 +189,7 @@ impl Index {
             if !kind.is_dir() && !(kind.is_file() && allowed_photo(&path)) { continue; }
             let Ok(metadata) = fs::symlink_metadata(&path) else { skipped += 1; incomplete = true; continue; };
             if is_link(&metadata) || (!metadata.is_dir() && !metadata.is_file()) { continue; }
+            if metadata.len() > i64::MAX as u64 { skipped += 1; continue; }
             let is_dir = metadata.is_dir();
             if !is_dir && !allowed_photo(&path) { continue; }
             let (stamp, modified) = if is_dir { ("directory".into(),0) } else { fingerprint(&metadata) };
@@ -208,13 +211,18 @@ impl Index {
         changes.retain(|entry| entry.is_dir || (entry.metadata.is_some() && fs::symlink_metadata(directory.join(&entry.name)).is_ok_and(|meta| !is_link(&meta) && fingerprint(&meta).0 == entry.stamp)));
         skipped += before - changes.len();
         let missing: Vec<String> = if incomplete { Vec::new() } else { existing.keys().filter(|name| !seen.contains(*name)).cloned().collect() };
+        if fs::canonicalize(directory).ok().as_deref() != Some(directory) { return Err("Folder changed while scanning.".into()); }
         let mut invalidated = Vec::new();
         let mut connection = self.lock()?;
         let transaction = connection.transaction().map_err(db_error)?;
         let root_exists: bool = transaction.query_row("SELECT EXISTS(SELECT 1 FROM roots WHERE id=?1)", [id], |row| row.get(0)).map_err(db_error)?;
         if !root_exists { return Err("This folder is no longer in the library.".into()); }
-        let prior: Option<(i64,usize)> = transaction.query_row("SELECT revision,skipped FROM directories WHERE root=?1 AND path=?2", params![id,parent], |row| Ok((row.get(0)?,row.get(1)?))).optional().map_err(db_error)?;
-        let changed = !changes.is_empty() || !missing.is_empty() || prior.is_none_or(|(_, old)| old != skipped);
+        if !parent.is_empty() {
+            let exists: bool = transaction.query_row("SELECT EXISTS(SELECT 1 FROM entries WHERE root=?1 AND path=?2 AND is_dir=1)", params![id,parent], |row| row.get(0)).map_err(db_error)?;
+            if !exists { return Err("Folder changed while scanning.".into()); }
+        }
+        let prior: Option<(i64,i64)> = transaction.query_row("SELECT revision,skipped FROM directories WHERE root=?1 AND path=?2", params![id,parent], |row| Ok((row.get(0)?,row.get(1)?))).optional().map_err(db_error)?;
+        let changed = !changes.is_empty() || !missing.is_empty() || prior.is_none_or(|(_, old)| old != skipped as i64);
         for name in missing {
             let path = if parent.is_empty() { name } else { format!("{parent}/{name}") };
             Self::delete_subtree(&transaction,id,&path)?;
@@ -228,11 +236,12 @@ impl Index {
             let json = metadata.map(serde_json::to_string).transpose().map_err(|_| "Cannot store picture metadata.")?;
             transaction.execute("INSERT INTO entries(root,path,parent,name,is_dir,bytes,modified,stamp,width,height,metadata) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)
                 ON CONFLICT(root,path) DO UPDATE SET parent=excluded.parent,name=excluded.name,is_dir=excluded.is_dir,bytes=excluded.bytes,modified=excluded.modified,stamp=excluded.stamp,width=excluded.width,height=excluded.height,metadata=excluded.metadata",
-                params![id,entry.path,parent,entry.name,entry.is_dir,entry.bytes,entry.modified,entry.stamp,metadata.and_then(|value| value.width),metadata.and_then(|value| value.height),json]).map_err(db_error)?;
+                params![id,entry.path,parent,entry.name,entry.is_dir,entry.bytes as i64,entry.modified as i64,entry.stamp,metadata.and_then(|value| value.width),metadata.and_then(|value| value.height),json]).map_err(db_error)?;
             if existing.contains_key(&entry.name) { invalidated.push(entry.path); }
         }
         if changed {
-            transaction.execute("INSERT INTO directories(root,path,revision,skipped) VALUES(?1,?2,1,?3) ON CONFLICT(root,path) DO UPDATE SET revision=revision+1,skipped=excluded.skipped", params![id,parent,skipped]).map_err(db_error)?;
+            transaction.execute("UPDATE revision_sequence SET value=value+1 WHERE id=1", []).map_err(db_error)?;
+            transaction.execute("INSERT INTO directories(root,path,revision,skipped) VALUES(?1,?2,(SELECT value FROM revision_sequence WHERE id=1),?3) ON CONFLICT(root,path) DO UPDATE SET revision=excluded.revision,skipped=excluded.skipped", params![id,parent,skipped as i64]).map_err(db_error)?;
         }
         transaction.commit().map_err(db_error)?;
         folders.sort_unstable();
@@ -241,7 +250,8 @@ impl Index {
 
     fn delete_subtree(connection: &Connection,id: u32,path: &str) -> Result<(),String> {
         for table in ["entries","directories"] {
-            connection.execute(&format!("DELETE FROM {table} WHERE root=?1 AND (path=?2 OR substr(path,1,length(?2)+1)=?2||'/')"),params![id,path]).map_err(db_error)?;
+            connection.execute(&format!("DELETE FROM {table} WHERE root=?1 AND path=?2"),params![id,path]).map_err(db_error)?;
+            connection.execute(&format!("DELETE FROM {table} WHERE root=?1 AND path>=?2||'/' AND path<?2||'0'"),params![id,path]).map_err(db_error)?;
         }
         Ok(())
     }

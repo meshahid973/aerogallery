@@ -68,6 +68,34 @@ pub fn fingerprint(metadata: &Metadata) -> (String, u64) {
     (stamp, modified.map_or(0, |time| time.as_secs()))
 }
 
+#[cfg(windows)]
+pub fn matches_open_path(file:&fs::File,expected:&Path)->bool {
+    use std::os::windows::{ffi::OsStringExt,io::AsRawHandle};
+    use windows_sys::Win32::Storage::FileSystem::GetFinalPathNameByHandleW;
+    let handle=file.as_raw_handle();
+    let size=unsafe{GetFinalPathNameByHandleW(handle,std::ptr::null_mut(),0,0)};
+    if size==0||size>32_768 { return false; }
+    let mut buffer=vec![0u16;size as usize];
+    let len=unsafe{GetFinalPathNameByHandleW(handle,buffer.as_mut_ptr(),size,0)};
+    if len==0||len>=size { return false; }
+    let actual=PathBuf::from(std::ffi::OsString::from_wide(&buffer[..len as usize]));
+    actual==expected
+}
+
+#[cfg(not(windows))]
+pub fn matches_open_path(file:&fs::File,expected:&Path)->bool {
+    let Ok(actual)=fs::canonicalize(expected) else { return false; };
+    if actual!=expected { return false; }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let (Ok(open),Ok(current))=(file.metadata(),fs::symlink_metadata(expected)) else { return false; };
+        !is_link(&current)&&open.dev()==current.dev()&&open.ino()==current.ino()
+    }
+    #[cfg(not(unix))]
+    { let _=file; true }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

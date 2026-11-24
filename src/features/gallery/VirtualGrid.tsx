@@ -9,17 +9,18 @@ const TILE_WIDTHS = [104, 142, 206] as const;
 const GAP = 8;
 const OVERSCAN = 2;
 
-const PhotoTile = memo(function PhotoTile({ folder, photo, index, selected, tabbable, onSelect }: {
+const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selected, tabbable, onSelect }: {
   folder: Folder;
   photo: Photo;
   index: number;
+  total: number;
   selected: boolean;
   tabbable: boolean;
   onSelect: (name: string) => void;
 }) {
   const { ref, url, failed } = useThumbnail(folder, photo.name);
   return (
-    <li className={styles.photoCell}>
+    <li className={styles.photoCell} aria-posinset={index + 1} aria-setsize={total}>
       <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} title={failed ? `${photo.name} — preview unavailable` : photo.name}>
         <span className={styles.imageFrame} ref={ref}>
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" /> : <AeroIcon name="picture" size={40} />}
@@ -43,7 +44,8 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, error, b
   const pendingFocus = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
   const [metrics, setMetrics] = useState({ width: 0, height: 0, top: 0 });
-  const tile = TILE_WIDTHS[size] ?? TILE_WIDTHS[1];
+  const preferred = TILE_WIDTHS[size] ?? TILE_WIDTHS[1];
+  const tile = metrics.width > 0 ? Math.min(preferred, metrics.width) : preferred;
   const columns = Math.max(1, Math.floor((metrics.width + GAP) / (tile + GAP)));
   const rowHeight = Math.ceil((tile - 12) * 0.75) + 41;
   const stride = rowHeight + GAP;
@@ -136,7 +138,7 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, error, b
         paddingTop: start * stride,
         paddingBottom: Math.max(0, rows - Math.max(start + 1, end)) * stride,
       }} onKeyDown={navigate} aria-label="Picture thumbnails">
-        {photos.slice(first, last).map((photo, offset) => <PhotoTile key={`${photo.name}:${photo.stamp}`} folder={folder} photo={photo} index={first + offset} selected={photo.name === selected} tabbable={first + offset === tabIndex} onSelect={onSelect} />)}
+        {photos.slice(first, last).map((photo, offset) => <PhotoTile key={`${photo.name}:${photo.stamp}`} folder={folder} photo={photo} index={first + offset} total={photos.length} selected={photo.name === selected} tabbable={first + offset === tabIndex} onSelect={onSelect} />)}
       </ul>
     </div>
   );

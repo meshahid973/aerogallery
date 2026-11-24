@@ -1,6 +1,8 @@
 use crate::{disk_cache::DiskCache, imaging::{self, PhotoMetadata}, index::{Index, Source}, paths::{self, fingerprint, is_link}};
 pub use crate::index::{Listing, Root};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
+use rayon::prelude::*;
+use std::hash::{Hash, Hasher};
 use std::{
     collections::{HashSet, VecDeque},
     fs,
@@ -19,13 +21,15 @@ pub struct Library(Arc<Inner>);
 
 struct Inner {
     index: Index,
-    disk: DiskCache,
+    disk: Option<DiskCache>,
     data: PathBuf,
     pool: rayon::ThreadPool,
+    scan_pool: rayon::ThreadPool,
     picker: Arc<AtomicUsize>,
     listing: Arc<AtomicUsize>,
     decoding: Arc<AtomicUsize>,
-    scan_lock: Mutex<()>,
+    scan_locks: Vec<Mutex<()>>,
+    cache_write: Mutex<()>,
     cache: Mutex<MemoryCache>,
     wake: SyncSender<Work>,
     overflow: Arc<std::sync::atomic::AtomicBool>,
@@ -94,14 +98,15 @@ impl Library {
         fs::create_dir_all(data).map_err(|_| "Cannot create library storage.")?;
         let data = fs::canonicalize(data).map_err(|_| "Cannot access library storage.")?;
         let index = Index::open(&data.join("library.sqlite3"))?;
-        let disk = DiskCache::open(&data.join("thumbnails.sqlite3")).map_err(|error| { eprintln!("Thumbnail database: {error}"); "Cannot open thumbnail cache." })?;
+        let disk = DiskCache::open(&data.join("thumbnails.sqlite3")).map_err(|error| eprintln!("Thumbnail cache unavailable: {error}")).ok();
         let pool = rayon::ThreadPoolBuilder::new().num_threads(2).thread_name(|id|format!("gallery-metadata-{id}")).build().map_err(|_| "Cannot start metadata workers.")?;
+        let scan_pool = rayon::ThreadPoolBuilder::new().num_threads(2).thread_name(|id|format!("gallery-scan-{id}")).build().map_err(|_| "Cannot start folder workers.")?;
         let (wake,receiver) = mpsc::sync_channel(256);
-        Ok((Self(Arc::new(Inner { index,disk,data,pool,picker:Arc::new(AtomicUsize::new(0)),listing:Arc::new(AtomicUsize::new(0)),decoding:Arc::new(AtomicUsize::new(0)),scan_lock:Mutex::new(()),cache:Mutex::new(MemoryCache::default()),wake,overflow:Arc::new(std::sync::atomic::AtomicBool::new(false)) })),receiver))
+        Ok((Self(Arc::new(Inner { index,disk,data,pool,scan_pool,picker:Arc::new(AtomicUsize::new(0)),listing:Arc::new(AtomicUsize::new(0)),decoding:Arc::new(AtomicUsize::new(0)),scan_locks:(0..64).map(|_|Mutex::new(())).collect(),cache_write:Mutex::new(()),cache:Mutex::new(MemoryCache::default()),wake,overflow:Arc::new(std::sync::atomic::AtomicBool::new(false)) })),receiver))
     }
 
     pub fn picker_permit(&self) -> Result<Permit,String> { Permit::acquire(&self.0.picker,1) }
-    pub fn listing_permit(&self) -> Result<Permit,String> { Permit::acquire(&self.0.listing,1) }
+    pub fn listing_permit(&self) -> Result<Permit,String> { Permit::acquire(&self.0.listing,3) }
     pub fn decode_permit(&self) -> Result<Permit,String> { Permit::acquire(&self.0.decoding,2) }
 
     pub fn roots(&self) -> Result<Vec<Root>,String> { Ok(self.0.index.sources()?.into_iter().map(|source|source.root).collect()) }
@@ -123,9 +128,10 @@ impl Library {
     }
 
     pub fn remove(&self,id:u32) -> Result<(),String> {
+        let _gate = self.0.cache_write.lock().map_err(lock_error)?;
         self.0.index.remove(id)?;
         self.0.cache.lock().map_err(lock_error)?.retain(|key|key.root != id);
-        if let Err(error) = self.0.disk.remove_root(id) { eprintln!("Cache removal: {error}"); }
+        if let Some(disk) = &self.0.disk { if let Err(error) = disk.remove_root(id) { eprintln!("Cache removal: {error}"); } }
         self.wake();
         Ok(())
     }
@@ -137,16 +143,18 @@ impl Library {
     }
 
     fn scan_one(&self,id:u32,parts:&[String]) -> Result<Vec<String>,String> {
-        let _guard = self.0.scan_lock.lock().map_err(lock_error)?;
-        let directory = self.resolved(id,parts)?;
         let relative = paths::relative(parts)?;
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        id.hash(&mut hasher);
+        relative.hash(&mut hasher);
+        let lock = &self.0.scan_locks[(hasher.finish() % self.0.scan_locks.len() as u64) as usize];
+        let _guard = lock.lock().map_err(lock_error)?;
+        let directory = self.resolved(id,parts)?;
         let (folders,invalidated) = self.0.index.scan(id,&relative,&directory,&self.0.data,&self.0.pool)?;
         if !invalidated.is_empty() {
             let matches = |key:&CacheKey| key.root==id && invalidated.iter().any(|path| key.path == *path || key.path.strip_prefix(path).is_some_and(|suffix|suffix.starts_with('/')));
             self.0.cache.lock().map_err(lock_error)?.retain(|key|!matches(key));
-            for path in invalidated {
-                if let Err(error) = self.0.disk.invalidate(id,&path) { eprintln!("Cache invalidation: {error}"); }
-            }
+            if let Some(disk) = &self.0.disk { if let Err(error) = disk.invalidate_many(id,&invalidated) { eprintln!("Cache invalidation: {error}"); } }
         }
         Ok(folders)
     }
@@ -178,111 +186,157 @@ impl Library {
         let (stamp,_) = fingerprint(&metadata);
         let key = CacheKey { root:id,path:paths::relative(parts)?,stamp:format!("{}:{stamp}",imaging::THUMB_VERSION) };
         if let Some(data) = self.0.cache.lock().map_err(lock_error)?.get(&key) { return Ok(data); }
-        match self.0.disk.get(id,&key.path,&key.stamp) {
+        if let Some(disk) = &self.0.disk { match disk.get(id,&key.path,&key.stamp) {
             Ok(Some(data)) => {
                 self.0.cache.lock().map_err(lock_error)?.put(key,data.clone());
                 return Ok(data);
             }
             Ok(None) => {}
             Err(error) => eprintln!("Cache read: {error}"),
-        }
+        } }
         let data = imaging::thumbnail(&path)?;
+        let _gate = self.0.cache_write.lock().map_err(lock_error)?;
         let current = self.resolved(id,parts)?;
         if current != path || !fs::symlink_metadata(&current).is_ok_and(|meta| !is_link(&meta) && fingerprint(&meta).0==stamp) { return Err("Picture changed while decoding.".into()); }
-        if let Err(error) = self.0.disk.put(id,&key.path,&key.stamp,&data) { eprintln!("Cache write: {error}"); }
+        if let Some(disk) = &self.0.disk { if let Err(error) = disk.put(id,&key.path,&key.stamp,&data) { eprintln!("Cache write: {error}"); } }
         self.0.cache.lock().map_err(lock_error)?.put(key,data.clone());
         Ok(data)
     }
 
-    fn scan_tree(&self,source:&Source) {
-        let mut pending = vec![Vec::<String>::new()];
-        while let Some(parts) = pending.pop() {
-            if let Ok(folders) = self.scan_one(source.root.id,&parts) {
-                if parts.len() < 128 {
-                    for folder in folders.into_iter().rev() {
-                        let mut child = parts.clone();
-                        child.push(folder);
-                        pending.push(child);
-                    }
+    fn scan_tree(&self, source:&Source, start:Vec<String>) {
+        let mut pending = vec![start];
+        while !pending.is_empty() {
+            let batch: Vec<_> = (0..2).filter_map(|_|pending.pop()).collect();
+            let scanned: Vec<_> = self.0.scan_pool.install(|| batch.into_par_iter().map(|parts| {
+                let folders = self.scan_one(source.root.id,&parts).unwrap_or_default();
+                (parts, folders)
+            }).collect());
+            for (parts,folders) in scanned {
+                if parts.len() >= 128 { continue; }
+                for folder in folders.into_iter().rev() {
+                    let mut child = parts.clone();
+                    child.push(folder);
+                    pending.push(child);
                 }
             }
             if self.0.index.root_path(source.root.id).is_err() { break; }
             thread::yield_now();
         }
     }
+
+    fn reconcile(&self,source:&Source,mut parts:Vec<String>) {
+        loop {
+            if let Ok(folders) = self.scan_one(source.root.id,&parts) {
+                for name in folders {
+                    let mut child=parts.clone();
+                    child.push(name);
+                    if child.len()<=128 && paths::relative(&child).ok().is_some_and(|path|self.0.index.revision(source.root.id,&path).ok().flatten().is_none()) {
+                        self.scan_tree(source,child);
+                    }
+                }
+                return;
+            }
+            if parts.pop().is_none() { return; }
+        }
+    }
+}
+
+fn event_relative(root:&Path,path:&Path) -> Option<Vec<String>> {
+    let direct=path.strip_prefix(root).ok().map(Path::to_path_buf);
+    let resolved=direct.or_else(|| {
+        let canonical=fs::canonicalize(path).ok().or_else(|| {
+            let parent=fs::canonicalize(path.parent()?).ok()?;
+            Some(parent.join(path.file_name()?))
+        })?;
+        canonical.strip_prefix(root).ok().map(Path::to_path_buf)
+    })?;
+    let parts=resolved.components().map(|part|part.as_os_str().to_str().map(str::to_owned)).collect::<Option<Vec<_>>>()?;
+    paths::relative(&parts).ok()?;
+    Some(parts)
 }
 
 fn worker(weak:Weak<Inner>,receiver:Receiver<Work>) {
     let Some(inner) = weak.upgrade() else { return; };
-    let wake = inner.wake.clone();
-    let overflow = inner.overflow.clone();
-    let excluded = inner.data.clone();
+    let wake=inner.wake.clone();
+    let overflow=inner.overflow.clone();
+    let excluded=inner.data.clone();
     drop(inner);
-    let mut watcher = notify::recommended_watcher(move |result:notify::Result<Event>| {
+    let mut watcher=notify::recommended_watcher(move |result:notify::Result<Event>| {
         match result {
             Ok(event) if !matches!(event.kind,EventKind::Access(_)) && (event.paths.is_empty() || event.paths.iter().any(|path|!path.starts_with(&excluded))) => {
                 if matches!(wake.try_send(Work::Event(event)),Err(TrySendError::Full(_))) { overflow.store(true,Ordering::Release); }
             }
-            Err(_) => { overflow.store(true,Ordering::Release); let _ = wake.try_send(Work::Refresh); }
+            Err(_) => { overflow.store(true,Ordering::Release); let _=wake.try_send(Work::Refresh); }
             _ => {}
         }
     }).ok();
-    let mut watched = HashSet::new();
-    let mut last_full = Instant::now();
-    let mut full = true;
+    let mut watched=HashSet::<PathBuf>::new();
+    let mut last_full=Instant::now();
+    let mut full=true;
+    let mut events=Vec::new();
     loop {
-        let Some(inner) = weak.upgrade() else { break; };
-        let library = Library(inner);
-        let sources = library.0.index.sources().unwrap_or_default();
-        let desired:HashSet<PathBuf> = sources.iter().map(|source|source.path.clone()).collect();
-        if let Some(watcher) = watcher.as_mut() {
-            for path in watched.difference(&desired) { let _ = watcher.unwatch(path); }
-            watched.retain(|path|desired.contains(path));
+        let Some(inner)=weak.upgrade() else { break; };
+        let library=Library(inner);
+        let sources=library.0.index.sources().unwrap_or_default();
+        let desired:HashSet<PathBuf>=sources.iter().map(|source|source.path.clone()).collect();
+        if let Some(watcher)=watcher.as_mut() {
+            for path in watched.iter().filter(|path|!desired.contains(*path)||!path.exists()) { let _=watcher.unwatch(path); }
+            watched.retain(|path|desired.contains(path)&&path.exists());
             for path in desired.difference(&watched).cloned().collect::<Vec<_>>() {
                 if watcher.watch(&path,RecursiveMode::Recursive).is_ok() { watched.insert(path); }
             }
         }
-        let mut dirty = HashSet::new();
-        if !full {
-            drop(library);
-            let message = receiver.recv_timeout(Duration::from_secs(2));
-            let Some(inner) = weak.upgrade() else { break; };
-            let library = Library(inner);
+        full |= library.0.overflow.swap(false,Ordering::AcqRel) || last_full.elapsed()>=RECONCILE;
+        let had_events=!events.is_empty();
+        let mut dirty=HashSet::<(u32,Vec<String>)>::new();
+        let mut recursive=HashSet::<(u32,Vec<String>)>::new();
+        for message in events.drain(..) {
             match message {
-                Ok(message) => {
-                    let mut events = vec![message];
-                    thread::sleep(Duration::from_millis(300));
-                    events.extend(receiver.try_iter().take(256));
-                    for message in events {
-                        match message {
-                            Work::Refresh => full=true,
-                            Work::Event(event) => {
-                                if event.paths.is_empty() { full=true; }
-                                for source in &sources {
-                                    if event.paths.iter().any(|path|path.starts_with(&source.path) || source.path.starts_with(path)) { dirty.insert(source.root.id); }
-                                }
+                Work::Refresh=>full=true,
+                Work::Event(event)=>{
+                    if event.paths.is_empty() { full=true; }
+                    for path in event.paths {
+                        if path.starts_with(&library.0.data) { continue; }
+                        let mut matched=false;
+                        for source in &sources {
+                            if let Some(mut parts)=event_relative(&source.path,&path) {
+                                matched=true;
+                                if parts.is_empty() { recursive.insert((source.root.id,parts)); continue; }
+                                if path.is_dir() { recursive.insert((source.root.id,parts.clone())); }
+                                parts.pop();
+                                dirty.insert((source.root.id,parts));
                             }
                         }
+                        if !matched { full=true; }
                     }
                 }
-                Err(mpsc::RecvTimeoutError::Disconnected) => break,
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
             }
-            full |= library.0.overflow.swap(false,Ordering::AcqRel) || last_full.elapsed() >= RECONCILE;
-            if full || !dirty.is_empty() {
-                let current = library.0.index.sources().unwrap_or_default();
-                for source in &current {
-                    if full || dirty.contains(&source.root.id) { library.scan_tree(source); }
-                }
-                if full { last_full=Instant::now(); }
-                if let Err(error) = library.0.disk.trim() { eprintln!("Cache maintenance: {error}"); }
-            }
-            full=false;
-            continue;
         }
-        for source in &sources { library.scan_tree(source); }
-        last_full=Instant::now();
+        if full {
+            for source in &sources { library.scan_tree(source,Vec::new()); }
+            last_full=Instant::now();
+        } else {
+            for (id,parts) in dirty {
+                if let Some(source)=sources.iter().find(|source|source.root.id==id) { library.reconcile(source,parts); }
+            }
+            for (id,parts) in recursive {
+                if let Some(source)=sources.iter().find(|source|source.root.id==id) { library.scan_tree(source,parts); }
+            }
+        }
+        if full||had_events {
+            if let Some(disk)=&library.0.disk { if let Err(error)=disk.trim() { eprintln!("Cache maintenance: {error}"); } }
+        }
         full=false;
+        drop(library);
+        match receiver.recv_timeout(Duration::from_secs(2)) {
+            Ok(message)=>{
+                events.push(message);
+                thread::sleep(Duration::from_millis(300));
+                events.extend(receiver.try_iter().take(256));
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected)=>break,
+            Err(mpsc::RecvTimeoutError::Timeout)=>{}
+        }
     }
 }
 
