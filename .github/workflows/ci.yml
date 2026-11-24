@@ -18,32 +18,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - name: Install dependencies
-        shell: pwsh
-        run: |
-          if (Test-Path pnpm-lock.yaml) { pnpm install --frozen-lockfile } else { pnpm install --no-frozen-lockfile }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (Test-Path src-tauri/Cargo.lock) { cargo metadata --manifest-path src-tauri/Cargo.toml --locked --format-version 1 | Out-Null } else { cargo generate-lockfile --manifest-path src-tauri/Cargo.toml }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Capture dependency locks
-        uses: actions/upload-artifact@v4
-        with:
-          name: foundation-lockfiles
-          path: |
-            pnpm-lock.yaml
-            src-tauri/Cargo.lock
-          if-no-files-found: error
+      - run: pnpm install --frozen-lockfile
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
-      - run: pnpm tauri build --no-bundle
+      - run: pnpm tauri build --no-bundle -- --locked
+      - run: git diff --exit-code -- pnpm-lock.yaml src-tauri/Cargo.lock
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
           name: windows-foundation
           path: src-tauri/target/release/aerogallery.exe
+          if-no-files-found: error
+      - name: Upload browser preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview
+          path: dist/
           if-no-files-found: error
