@@ -1,0 +1,26 @@
+name: Capture resolved foundation locks
+on:
+  pull_request:
+    types: [synchronize]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  export:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/application-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: foundation-lockfiles
+          run-id: 45433952493
+          github-token: ${{ github.token }}
+      - name: Emit exact lockfile bytes for commit
+        shell: bash
+        run: |
+          for f in pnpm-lock.yaml src-tauri/Cargo.lock; do
+            echo "BEGIN_LOCK $f"
+            base64 -w 1024 "$f" | sed 's/^/LOCK_DATA /'
+            echo "END_LOCK $f"
+          done

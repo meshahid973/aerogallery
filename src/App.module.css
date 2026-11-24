@@ -1,5 +1,7 @@
 .environment {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
   padding: var(--space-3);
   display: flex;
   background:
@@ -10,22 +12,24 @@
 .shell {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 6px;
 }
 .heading {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3) var(--space-3);
 }
 .heading h1 { font-size: 20px; font-weight: 400; color: #102f45; text-shadow: 0 1px 0 #ffffffb0; }
-.toolbar { flex-wrap: wrap; border-bottom: 0; border-radius: 3px 3px 0 0; }
+.toolbar { flex-shrink: 0; flex-wrap: wrap; border-bottom: 0; border-radius: 3px 3px 0 0; }
 .toolbarSpacer { flex: 1; }
 .workspace {
   flex: 1;
-  min-height: 320px;
+  min-height: 0;
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
@@ -37,6 +41,7 @@
   border-right: 1px solid var(--line);
   padding: var(--space-3) var(--space-2);
   min-width: 0;
+  overflow: auto;
 }
 .sidebar h2 { font-size: 13px; font-weight: 600; color: var(--heading); padding: 0 var(--space-2) var(--space-2); }
 .libraryItem, .folderItem {
@@ -49,13 +54,14 @@
 .libraryItem { background: var(--blue-gradient); border: 1px solid #8eb7d0; border-radius: var(--radius-control); box-shadow: var(--edge-light); }
 .folderItem { padding-left: 20px; }
 .folderItem span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.content { min-width: 0; display: grid; place-items: center; padding: var(--space-5); }
-.empty { max-width: 440px; width: 100%; padding: 32px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); border: 0; }
+.content { min-width: 0; min-height: 0; overflow: auto; display: flex; flex-direction: column; padding: var(--space-5); }
+.empty { margin: auto; flex-shrink: 0; max-width: 440px; width: 100%; padding: 32px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); border: 0; }
 .empty h2 { color: var(--heading); font-size: 20px; font-weight: 400; }
 .empty p { color: var(--text-muted); line-height: 1.5; }
 .empty .path { max-width: 100%; overflow-wrap: anywhere; color: var(--text); }
 .empty .error { color: var(--error); }
 .status {
+  flex-shrink: 0;
   min-height: 26px;
   display: flex;
   justify-content: space-between;
@@ -72,7 +78,7 @@
 }
 @media (max-width: 600px) {
   .environment { padding: 4px; }
-  .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, auto) minmax(0, 1fr); }
   .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
   .content { padding: var(--space-3); }
 }
