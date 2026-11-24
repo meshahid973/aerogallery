@@ -1,11 +1,14 @@
 {
   "identifier": "main",
-  "description": "Local main window: application version and native open picker only.",
+  "description": "Local gallery window; selected library sources only.",
   "windows": [
     "main"
   ],
   "permissions": [
-    "allow-app-version",
-    "dialog:allow-open"
+    "allow-pick-folder",
+    "allow-list-roots",
+    "allow-read-folder",
+    "allow-remove-root",
+    "allow-thumbnail"
   ]
 }

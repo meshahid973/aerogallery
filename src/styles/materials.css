@@ -1,28 +1,29 @@
 .aero-glass {
-  background: linear-gradient(180deg, #ffffff5c, #a0d9f21a 38%, #194f781a), rgba(var(--glass-tint), var(--glass-density));
+  background: linear-gradient(124deg, #ffffff78 0%, #ffffff0d 29%, #b7edff22 30%, #ffffff05 68%, #ffffff33 69%, #ffffff12 100%), rgba(var(--glass-tint), var(--glass-density));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-frame);
-  box-shadow: inset 0 1px 0 #fff, 0 2px 8px #173b5366;
+  box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px #254c6e59, 0 2px 9px #173b5366;
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-}
-.aero-panel {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-panel);
-  background: var(--paper);
 }
 .aero-toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   background: var(--toolbar-gradient);
-  border: 1px solid var(--line-strong);
   box-shadow: inset 0 1px 0 var(--white);
 }
-.aero-button, .aero-select {
+.aero-toolbar[data-tone="command"] {
+  color: var(--command-text);
+  background: var(--command-gradient);
+  box-shadow: inset 0 1px 0 #d5efff9c, inset 0 -1px 0 #122d42;
+}
+.aero-button, .aero-select, .aero-input {
   min-height: var(--control-height);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
+}
+.aero-button, .aero-select {
   background: var(--silver-gradient);
   box-shadow: var(--edge-light), var(--raised-shadow);
 }
@@ -30,24 +31,53 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  padding: 3px 12px;
+  gap: 5px;
+  padding: 3px 10px;
   cursor: pointer;
   white-space: nowrap;
   transition: border-color var(--transition-fast);
 }
+.aero-icon-button { padding: 3px; min-width: 30px; }
 .aero-button--accent { background: var(--green-gradient); border-color: #568638; color: #234619; }
-.aero-button--toolbar { background: transparent; border-color: transparent; box-shadow: none; padding-inline: 8px; }
+.aero-button--toolbar { background: transparent; border-color: transparent; box-shadow: none; padding-inline: 7px; }
+.aero-button--toolbar.aero-icon-button { padding-inline: 4px; }
 .aero-button:not(:disabled):hover, .aero-select:not(:disabled):hover { background: var(--blue-gradient); border-color: #4386b2; box-shadow: var(--edge-light), var(--raised-shadow); }
-.aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: #3a7024; box-shadow: var(--edge-light), 0 0 0 1px #77aa4c; }
-.aero-button:not(:disabled):active, .aero-button[aria-pressed="true"] { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
-.aero-button:disabled, .aero-select:disabled { background: #e5ebef; border-color: #b5c4cf; color: #667c89; box-shadow: none; }
-.aero-button:disabled img { opacity: .55; }
-.aero-select { padding: 3px 8px; cursor: pointer; }
-.aero-input { min-height: var(--control-height); border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--white); box-shadow: var(--recessed-shadow); padding: 4px 8px; }
-@media (prefers-reduced-transparency: reduce) {
-  .aero-glass { backdrop-filter: none; }
+.aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: #3a7024; }
+.aero-button:not(:disabled):active, .aero-button[aria-pressed="true"]:not(:disabled) { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
+.aero-button:disabled, .aero-select:disabled { background: #e5ebef; border-color: #b5c4cf; color: #647988; box-shadow: none; }
+.aero-button--toolbar:disabled { background: transparent; border-color: transparent; }
+.aero-button:disabled img { opacity: .45; }
+[data-tone="command"] .aero-button--toolbar { color: var(--command-text); text-shadow: 0 1px 1px #193044; }
+[data-tone="command"] .aero-button--toolbar:not(:disabled):hover { background: var(--command-hover); border-color: #b3d9ee; box-shadow: inset 0 1px 0 #ffffff9e; }
+[data-tone="command"] .aero-button--toolbar:not(:disabled):active { background: #143a565c; box-shadow: inset 0 1px 3px #102f45; }
+[data-tone="command"] .aero-button--toolbar:disabled { color: #b4c5d0; text-shadow: none; }
+[data-tone="command"] .aero-button:focus-visible { outline-color: #e4fbff; }
+.aero-separator { width: 1px; height: 20px; background: #192f4666; box-shadow: 1px 0 0 #c9e7f64a; margin-inline: 4px; }
+.aero-select { padding: 3px 7px; cursor: pointer; max-width: 100%; }
+.aero-input { background: var(--white); box-shadow: var(--recessed-shadow); padding: 4px 8px; min-width: 0; }
+.aero-input:disabled { background: #edf3f6; color: var(--text-muted); }
+.aero-range {
+  appearance: none;
+  width: 92px;
+  height: 22px;
+  padding: 0;
+  margin: 0 2px;
+  background: transparent;
+  cursor: pointer;
 }
+.aero-range::-webkit-slider-runnable-track { height: 5px; border: 1px solid #8ba5b8; border-radius: 2px; background: #d9e7ed; box-shadow: var(--recessed-shadow); }
+.aero-range::-webkit-slider-thumb { appearance: none; width: 12px; height: 17px; margin-top: -7px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--silver-gradient); box-shadow: var(--edge-light), var(--raised-shadow); }
+.aero-range:not(:disabled):hover::-webkit-slider-thumb { background: var(--blue-gradient); }
+.aero-range::-moz-range-track { height: 5px; border: 1px solid #8ba5b8; border-radius: 2px; background: #d9e7ed; box-shadow: var(--recessed-shadow); }
+.aero-range::-moz-range-thumb { width: 11px; height: 16px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--silver-gradient); box-shadow: var(--edge-light), var(--raised-shadow); }
+.aero-range:disabled { opacity: .5; }
+.aero-spinner { width: 17px; height: 17px; border: 2px solid #b9d9ea; border-top-color: #2679b4; border-radius: 50%; animation: aero-spin .8s linear infinite; }
+@keyframes aero-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .aero-spinner { animation: none; } }
+@media (prefers-reduced-transparency: reduce) { .aero-glass { backdrop-filter: none; } }
 @media (forced-colors: active) {
-  .aero-glass, .aero-panel, .aero-toolbar, .aero-button, .aero-select { border: 1px solid ButtonText; }
+  .aero-glass, .aero-toolbar, .aero-button, .aero-select, .aero-input { border: 1px solid ButtonText; }
+  [data-tone="command"] .aero-button { color: ButtonText; text-shadow: none; }
+  .aero-button:focus-visible, [data-tone="command"] .aero-button:focus-visible { outline-color: Highlight; }
+  .aero-range { appearance: auto; }
 }

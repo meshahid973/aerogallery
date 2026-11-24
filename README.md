@@ -2,21 +2,15 @@
 
 An offline-first desktop photo gallery with a Frutiger Aero interface, built with Tauri, Rust, React and TypeScript.
 
-## Development
-
-Requires Node.js 22.12+, pnpm 10, stable Rust and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/), including WebView2 and the MSVC C++ build tools.
+Requires Node.js 22.12+, pnpm 10, stable Rust and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm tauri dev
 ```
 
-Use `pnpm dev` for the browser-only shell preview, `pnpm build` for frontend checks, and `pnpm tauri build` to build the Windows installer.
+Use `pnpm build` for frontend checks and `pnpm tauri build -- --locked` for a Windows build.
 
-## Foundation
+Browse user-selected folders, filter and sort photos, and resize the thumbnail grid. Rust lists one directory at a time and generates bounded, orientation-corrected thumbnails for JPEG, PNG and WebP. Sources and thumbnail cache are session-only. Persistent indexing, filesystem watching, full-resolution viewing and additional formats remain future phases.
 
-The native folder picker and version IPC are connected in code. Folder indexing, thumbnail generation and photo viewing are not implemented yet. The UI deliberately exposes no simulated gallery actions.
-
-Shared colors, geometry, lighting and glass density live in `src/styles/tokens.css`; material treatments live in `src/styles/materials.css`; application layout is separate. New features should reuse these materials and the shared components instead of overriding them globally. See [asset notices](ASSETS.md) for provenance.
-
-The local main window has permission to open the native picker and query the application version only. There is no arbitrary filesystem, shell, network or local asset-protocol API exposed to the frontend.
+See [design](DESIGN.md) and [asset notices](ASSETS.md). Native commands are scoped to the main window and the folders chosen through the native picker; no general filesystem, shell or asset-protocol access is exposed.

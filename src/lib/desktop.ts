@@ -1,15 +1,36 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-dialog';
 
 export const isDesktop = isTauri();
 
-export async function getAppVersion(): Promise<string> {
-  return invoke<string>('app_version');
+export interface Root {
+  id: number;
+  name: string;
 }
 
-export async function selectFolder(): Promise<string | null> {
-  const result = await open({ directory: true, multiple: false, title: 'Select a picture folder' });
-  if (result === null) return null;
-  if (typeof result !== 'string') throw new Error('Expected one folder');
-  return result;
+export interface Folder {
+  rootId: number;
+  parts: string[];
 }
+
+export interface Photo {
+  name: string;
+  bytes: number;
+  modified: number;
+}
+
+export interface Listing {
+  folders: string[];
+  photos: Photo[];
+  skipped: number;
+}
+
+export const folderKey = (folder: Folder) => JSON.stringify([folder.rootId, ...folder.parts]);
+export const rootFolder = (root: Root): Folder => ({ rootId: root.id, parts: [] });
+export const childFolder = (folder: Folder, name: string): Folder => ({ ...folder, parts: [...folder.parts, name] });
+
+export const listRoots = () => invoke<Root[]>('list_roots');
+export const pickFolder = () => invoke<Root | null>('pick_folder');
+export const readFolder = (folder: Folder) => invoke<Listing>('read_folder', { ...folder });
+export const removeRoot = (rootId: number) => invoke<void>('remove_root', { rootId });
+export const readThumbnail = (folder: Folder, name: string) =>
+  invoke<ArrayBuffer>('thumbnail', { rootId: folder.rootId, parts: [...folder.parts, name] });
