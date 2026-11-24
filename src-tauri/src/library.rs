@@ -248,7 +248,8 @@ impl Library {
         let (folders, invalidated) =
             self.0
                 .index
-                .scan(id, &relative, &directory, &self.0.data, &self.0.pool)?;
+                .scan(id, &relative, &directory, &self.0.data)?;
+        drop(_guard);
         if !invalidated.is_empty() {
             let matches = |key: &CacheKey| {
                 key.root == id
@@ -283,6 +284,7 @@ impl Library {
             }
         }
         self.scan_one(id, parts)?;
+        self.wake();
         self.0
             .index
             .list(id, &relative)?
@@ -299,8 +301,10 @@ impl Library {
     }
 
     pub fn metadata(&self, id: u32, parts: &[String]) -> Result<Option<PhotoMetadata>, String> {
-        self.resolved(id, parts)?;
-        self.0.index.metadata(id, &paths::relative(parts)?)
+        let path = self.resolved(id, parts)?;
+        if let Some(metadata) = self.0.index.metadata(id, &paths::relative(parts)?)? { return Ok(Some(metadata)); }
+        if !paths::allowed_photo(&path) { return Ok(None); }
+        Ok(Some(self.0.pool.install(|| imaging::metadata(&path))))
     }
 
     pub fn thumbnail(&self, id: u32, parts: &[String]) -> Result<Vec<u8>, String> {
@@ -358,6 +362,14 @@ impl Library {
         Ok(data)
     }
 
+    fn enrich_folder(&self, id: u32, parts: &[String]) {
+        if let (Ok(directory), Ok(relative)) = (self.resolved(id, parts), paths::relative(parts)) {
+            if let Err(error) = self.0.index.enrich(id, &relative, &directory, &self.0.pool) {
+                eprintln!("Metadata indexing: {error}");
+            }
+        }
+    }
+
     fn scan_tree(&self, source: &Source, start: Vec<String>) {
         let mut pending = vec![start];
         while !pending.is_empty() {
@@ -366,7 +378,10 @@ impl Library {
                 batch
                     .into_par_iter()
                     .map(|parts| {
-                        let folders = self.scan_one(source.root.id, &parts).unwrap_or_default();
+                        let folders = match self.scan_one(source.root.id, &parts) {
+                            Ok(folders) => { self.enrich_folder(source.root.id, &parts); folders },
+                            Err(_) => Vec::new(),
+                        };
                         (parts, folders)
                     })
                     .collect()
@@ -391,6 +406,7 @@ impl Library {
     fn reconcile(&self, source: &Source, mut parts: Vec<String>) {
         loop {
             if let Ok(folders) = self.scan_one(source.root.id, &parts) {
+                self.enrich_folder(source.root.id, &parts);
                 for name in folders {
                     let mut child = parts.clone();
                     child.push(name);
@@ -706,5 +722,22 @@ mod tests {
                 .unwrap()
                 .is_some_and(|listing| listing.photos.is_empty())
         });
+    }
+    #[test]
+    fn listing_is_published_before_metadata_enrichment() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("pictures");
+        fs::create_dir_all(&source).unwrap();
+        DynamicImage::new_rgb8(80, 60).save(source.join("photo.png")).unwrap();
+        let (library, _receiver) = Library::initialize(&temp.path().join("data")).unwrap();
+        let root = library.add(source).unwrap();
+        let initial = library.list(root.id, &[], true).unwrap();
+        assert_eq!(initial.photos.len(), 1);
+        assert_eq!(initial.photos[0].width, None);
+        library.enrich_folder(root.id, &[]);
+        let enriched = library.list(root.id, &[], false).unwrap();
+        assert_eq!(enriched.photos[0].width, Some(80));
+        assert!(enriched.revision > initial.revision);
+        assert_eq!(initial.photos[0].stamp, enriched.photos[0].stamp);
     }
 }

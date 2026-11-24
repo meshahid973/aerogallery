@@ -1,0 +1,26 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "AeroGallery",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 640,
+        "minHeight": 460,
+        "center": true,
+        "resizable": true,
+        "decorations": true,
+        "dragDropEnabled": false,
+        "theme": "Light",
+        "transparent": true,
+        "backgroundColor": "#00000000",
+        "windowEffects": {
+          "effects": [
+            "acrylic"
+          ]
+        }
+      }
+    ]
+  }
+}

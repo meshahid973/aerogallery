@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AeroButton, AeroGlass, AeroIconButton, AeroSelect, AeroToolbar } from './components/aero/controls';
+import { AeroButton, AeroIconButton, AeroSelect, AeroToolbar } from './components/aero/controls';
 import { AeroIcon } from './components/aero/Icon';
 import { glassDensities, readDensity, saveDensity } from './lib/appearance';
 import type { GlassDensity } from './lib/appearance';
@@ -27,14 +27,12 @@ export default function App() {
   }
 
   return (
-    <div className={styles.environment} data-glass={density}>
-      <AeroGlass className={styles.shell}>
-        <AeroToolbar className={styles.commands} data-tone="command" aria-label="Library commands">
+    <div className={styles.shell} data-glass={density} data-native-glass={isDesktop && /Windows/i.test(navigator.userAgent)}>
+        <AeroToolbar className={styles.commands} data-tone="glass" aria-label="Library commands">
           <AeroButton variant="toolbar" disabled={!isDesktop || busy} onClick={() => void gallery.add()}>
             <AeroIcon name="openFolder" size={22} /> Add folder
           </AeroButton>
           <AeroIconButton variant="toolbar" icon="remove" label="Remove source folder from library" disabled={!active || busy} onClick={() => void gallery.remove()} />
-          <span className="aero-separator" aria-hidden="true" />
           <AeroIconButton variant="toolbar" icon="up" label="Parent folder" disabled={!active?.parts.length || busy} onClick={() => active && void gallery.select({ ...active, parts: active.parts.slice(0, -1) })} />
           <AeroIconButton variant="toolbar" icon="refresh" label="Refresh folder" disabled={!active || busy} onClick={() => void gallery.refresh()} />
           <span className={styles.spacer} />
@@ -53,7 +51,6 @@ export default function App() {
           <FolderTree roots={roots} active={active} cache={gallery.cache} expanded={gallery.expanded} busy={busy} onSelect={(folder) => void gallery.select(folder)} onToggle={gallery.toggle} />
           <GalleryPane key={active ? folderKey(active) : 'library'} folder={active} root={root} listing={gallery.listing} busy={busy} error={gallery.error} sort={sort} onSort={setSort} size={size} onSize={setSize} onSelectFolder={(folder) => void gallery.select(folder)} onAdd={() => void gallery.add()} />
         </div>
-      </AeroGlass>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { color: var(--text); background: var(--sky-bottom); }
+body { color: var(--text); background: transparent; }
 button, select, input { font: inherit; color: inherit; }
 button, select { touch-action: manipulation; }
 button:disabled, select:disabled, input:disabled { cursor: default; }

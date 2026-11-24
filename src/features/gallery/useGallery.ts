@@ -111,7 +111,6 @@ export function useGallery() {
       } catch (failure) {
         if (!stopped && !pending.current && epoch === actionEpoch.current && activeKey.current === key) {
           activeRevision.current = null;
-          setListing(null);
           setError(typeof failure === 'string' ? failure : 'Cannot read this folder.');
         }
       } finally { running = false; }

@@ -46,6 +46,8 @@ export function GalleryPane({ folder, root, listing, busy, error, sort, onSort, 
   const [metadata, setMetadata] = useState<PhotoMetadata | null>(null);
   const photoName = selectedPhoto?.name;
   const stamp = selectedPhoto?.stamp;
+  const width = selectedPhoto?.width;
+  const height = selectedPhoto?.height;
   useEffect(() => {
     let active = true;
     setMetadata(null);
@@ -53,7 +55,7 @@ export function GalleryPane({ folder, root, listing, busy, error, sort, onSort, 
       if (active) setMetadata(result);
     }, () => {});
     return () => { active = false; };
-  }, [folder, photoName, stamp]);
+  }, [folder, photoName, stamp, width, height]);
   const metadataTitle = metadata ? [metadata.camera_make, metadata.camera_model, metadata.captured_at, metadata.iso && `ISO ${metadata.iso}`, metadata.exposure, metadata.aperture, metadata.focal_length].filter(Boolean).join(' · ') : undefined;
   const breadcrumbs = folder && root ? [
     { name: root.name, parts: [] as string[] },
@@ -92,7 +94,6 @@ export function GalleryPane({ folder, root, listing, busy, error, sort, onSort, 
       </AeroToolbar>
       {folder && photos.length > 0 ? <VirtualGrid key={JSON.stringify([query, sort])} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} error={error} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
         {error && <p role="alert" className={styles.error}>{error}</p>}
-        {busy && !listing && <div className={styles.loading} role="status"><span className="aero-spinner" /> Opening folder…</div>}
         {empty && (
           <div className={styles.empty}>
             <AeroIcon name={folder ? 'folder' : 'picture'} size={48} />
@@ -101,7 +102,7 @@ export function GalleryPane({ folder, root, listing, busy, error, sort, onSort, 
         )}
       </div>}
       <AeroToolbar className={styles.status}>
-        <span className={styles.count} role="status" title={metadataTitle}>{busy ? 'Opening…' : selectedPhoto ? `${selectedPhoto.name} · ${formatBytes(selectedPhoto.bytes)}${selectedPhoto.width && selectedPhoto.height ? ` · ${selectedPhoto.width} × ${selectedPhoto.height}` : ''}` : `${photos.length.toLocaleString()} ${photos.length === 1 ? 'picture' : 'pictures'}${listing?.skipped ? ` · ${listing.skipped} unreadable` : ''}`}</span>
+        <span className={styles.count} role="status" title={metadataTitle}>{busy ? <span className={styles.progress}><span className="aero-spinner" aria-hidden="true" /> Opening folder…</span> : selectedPhoto ? `${selectedPhoto.name} · ${formatBytes(selectedPhoto.bytes)}${(selectedPhoto.width ?? metadata?.width) && (selectedPhoto.height ?? metadata?.height) ? ` · ${selectedPhoto.width ?? metadata?.width} × ${selectedPhoto.height ?? metadata?.height}` : ''}` : `${photos.length.toLocaleString()} ${photos.length === 1 ? 'picture' : 'pictures'}${listing?.skipped ? ` · ${listing.skipped} unreadable` : ''}`}</span>
         <AeroRange min={0} max={2} step={1} value={size} disabled={!listing} aria-label="Thumbnail size" aria-valuetext={sizes[size]} title={`Thumbnail size: ${sizes[size]}`} onChange={(event) => onSize(Number(event.currentTarget.value))} />
       </AeroToolbar>
     </main>

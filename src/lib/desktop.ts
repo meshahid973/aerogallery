@@ -35,10 +35,17 @@ export const folderKey = (folder: Folder) => JSON.stringify([folder.rootId, ...f
 export const rootFolder = (root: Root): Folder => ({ rootId: root.id, parts: [] });
 export const childFolder = (folder: Folder, name: string): Folder => ({ ...folder, parts: [...folder.parts, name] });
 
-export const listRoots = () => invoke<Root[]>('list_roots');
+function bounded<T>(request: Promise<T>, milliseconds: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(message), milliseconds);
+    void request.then(resolve, reject).finally(() => window.clearTimeout(timer));
+  });
+}
+
+export const listRoots = () => bounded(invoke<Root[]>('list_roots'), 15000, 'Cannot connect to the library.');
 export const pickFolder = () => invoke<Root | null>('pick_folder');
-export const readFolder = (folder: Folder, refresh = false) => invoke<Listing>('read_folder', { ...folder, refresh });
-export const folderRevision = (folder: Folder) => invoke<number>('folder_revision', { ...folder });
+export const readFolder = (folder: Folder, refresh = false) => bounded(invoke<Listing>('read_folder', { ...folder, refresh }), 15000, 'Folder is taking longer than expected. Try Refresh.');
+export const folderRevision = (folder: Folder) => bounded(invoke<number>('folder_revision', { ...folder }), 5000, 'Cannot check folder changes.');
 export const removeRoot = (rootId: number) => invoke<void>('remove_root', { rootId });
 export const readThumbnail = (folder: Folder, name: string) =>
   invoke<ArrayBuffer>('thumbnail', { rootId: folder.rootId, parts: [...folder.parts, name] });
