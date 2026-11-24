@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, UIEvent } from 'react';
 import { AeroIcon } from '../../components/aero/Icon';
 import type { Folder, Photo } from '../../lib/desktop';
@@ -54,7 +54,7 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, error, b
   const end = Math.min(rows, Math.ceil((metrics.top + metrics.height) / stride) + OVERSCAN);
   const first = start * columns;
   const last = Math.min(photos.length, Math.max(start + 1, end) * columns);
-  const selectedIndex = selected === null ? -1 : photos.findIndex((photo) => photo.name === selected);
+  const selectedIndex = useMemo(() => selected === null ? -1 : photos.findIndex((photo) => photo.name === selected), [photos, selected]);
   const tabIndex = selectedIndex >= first && selectedIndex < last ? selectedIndex : first;
 
   useLayoutEffect(() => {

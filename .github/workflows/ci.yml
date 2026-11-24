@@ -1,16 +1,17 @@
-name: Prepare image engine
+name: Windows gallery
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
 permissions:
   contents: read
 concurrency:
-  group: engine-${{ github.ref }}
+  group: gallery-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -21,20 +22,22 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - run: pnpm build
-      - run: cargo update --workspace --manifest-path src-tauri/Cargo.toml
-      - run: cargo fmt --manifest-path src-tauri/Cargo.toml
-      - name: Export resolved lock and formatted source
-        shell: bash
-        run: |
-          for f in src-tauri/Cargo.lock src-tauri/src/*.rs src-tauri/build.rs; do
-            echo "BEGIN_FILE $f"
-            git hash-object "$f" | sed 's/^/FILE_HASH /'
-            base64 -w 1024 "$f" | sed 's/^/FILE_DATA /'
-            echo "END_FILE $f"
-          done
+      - run: cargo test --release --manifest-path src-tauri/Cargo.toml --locked
+      - run: pnpm tauri build --no-bundle -- --locked
+      - run: git diff --exit-code -- pnpm-lock.yaml src-tauri/Cargo.lock
       - uses: actions/upload-artifact@v4
         with:
-          name: engine-preview
+          name: windows-gallery
+          path: src-tauri/target/release/aerogallery.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview
           path: dist/
+          if-no-files-found: error

@@ -27,10 +27,16 @@ pub fn valid_component(name: &str) -> bool {
 }
 
 pub fn allowed_photo(path: &Path) -> bool {
-    path.extension().and_then(|extension| extension.to_str()).is_some_and(|extension| {
-        ["jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "ico", "tga", "qoi", "pnm", "ppm", "pgm", "pbm"]
-            .iter().any(|format| extension.eq_ignore_ascii_case(format))
-    })
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            [
+                "jpg", "jpeg", "png", "webp", "gif", "bmp", "tif", "tiff", "ico", "tga", "qoi",
+                "pnm", "ppm", "pgm", "pbm",
+            ]
+            .iter()
+            .any(|format| extension.eq_ignore_ascii_case(format))
+        })
 }
 
 pub fn relative(parts: &[String]) -> Result<String, String> {
@@ -62,38 +68,62 @@ pub fn resolve(root: &Path, parts: &[String]) -> Result<PathBuf, String> {
 }
 
 pub fn fingerprint(metadata: &Metadata) -> (String, u64) {
-    let modified = metadata.modified().ok().and_then(|time| time.duration_since(UNIX_EPOCH).ok());
-    let created = metadata.created().ok().and_then(|time| time.duration_since(UNIX_EPOCH).ok());
-    let stamp = format!("{}:{}:{}", metadata.len(), modified.map_or(0, |time| time.as_nanos()), created.map_or(0, |time| time.as_nanos()));
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok());
+    let created = metadata
+        .created()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok());
+    let stamp = format!(
+        "{}:{}:{}",
+        metadata.len(),
+        modified.map_or(0, |time| time.as_nanos()),
+        created.map_or(0, |time| time.as_nanos())
+    );
     (stamp, modified.map_or(0, |time| time.as_secs()))
 }
 
 #[cfg(windows)]
-pub fn matches_open_path(file:&fs::File,expected:&Path)->bool {
-    use std::os::windows::{ffi::OsStringExt,io::AsRawHandle};
+pub fn matches_open_path(file: &fs::File, expected: &Path) -> bool {
+    use std::os::windows::{ffi::OsStringExt, io::AsRawHandle};
     use windows_sys::Win32::Storage::FileSystem::GetFinalPathNameByHandleW;
-    let handle=file.as_raw_handle();
-    let size=unsafe{GetFinalPathNameByHandleW(handle,std::ptr::null_mut(),0,0)};
-    if size==0||size>32_768 { return false; }
-    let mut buffer=vec![0u16;size as usize];
-    let len=unsafe{GetFinalPathNameByHandleW(handle,buffer.as_mut_ptr(),size,0)};
-    if len==0||len>=size { return false; }
-    let actual=PathBuf::from(std::ffi::OsString::from_wide(&buffer[..len as usize]));
-    actual==expected
+    let handle = file.as_raw_handle();
+    let size = unsafe { GetFinalPathNameByHandleW(handle, std::ptr::null_mut(), 0, 0) };
+    if size == 0 || size > 32_768 {
+        return false;
+    }
+    let mut buffer = vec![0u16; size as usize];
+    let len = unsafe { GetFinalPathNameByHandleW(handle, buffer.as_mut_ptr(), size, 0) };
+    if len == 0 || len >= size {
+        return false;
+    }
+    let actual = PathBuf::from(std::ffi::OsString::from_wide(&buffer[..len as usize]));
+    actual == expected
 }
 
 #[cfg(not(windows))]
-pub fn matches_open_path(file:&fs::File,expected:&Path)->bool {
-    let Ok(actual)=fs::canonicalize(expected) else { return false; };
-    if actual!=expected { return false; }
+pub fn matches_open_path(file: &fs::File, expected: &Path) -> bool {
+    let Ok(actual) = fs::canonicalize(expected) else {
+        return false;
+    };
+    if actual != expected {
+        return false;
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        let (Ok(open),Ok(current))=(file.metadata(),fs::symlink_metadata(expected)) else { return false; };
-        !is_link(&current)&&open.dev()==current.dev()&&open.ino()==current.ino()
+        let (Ok(open), Ok(current)) = (file.metadata(), fs::symlink_metadata(expected)) else {
+            return false;
+        };
+        !is_link(&current) && open.dev() == current.dev() && open.ino() == current.ino()
     }
     #[cfg(not(unix))]
-    { let _=file; true }
+    {
+        let _ = file;
+        true
+    }
 }
 
 #[cfg(test)]
@@ -102,7 +132,17 @@ mod tests {
 
     #[test]
     fn rejects_path_escape_components() {
-        for name in ["", ".", "..", "../outside", "a/b", "a\\b", "C:drive", "photo.jpg:stream", "\0"] {
+        for name in [
+            "",
+            ".",
+            "..",
+            "../outside",
+            "a/b",
+            "a\\b",
+            "C:drive",
+            "photo.jpg:stream",
+            "\0",
+        ] {
             assert!(!valid_component(name), "{name:?}");
         }
         assert!(valid_component("Summer coast.jpg"));
