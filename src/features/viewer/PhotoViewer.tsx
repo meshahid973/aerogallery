@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AeroButton, AeroIconButton, AeroSelect, AeroToolbar } from '../../components/aero/controls';
+import { CaptionBar } from '../../components/aero/CaptionBar';
 import { AeroIcon } from '../../components/aero/Icon';
 import { suspendThumbnailQueue } from '../gallery/thumbnails';
 import { setViewerFullscreen } from '../../lib/desktop';
@@ -150,6 +151,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
   return (
     <dialog ref={dialog} className={styles.viewer} tabIndex={-1} aria-label="Photo viewer" data-fullscreen={fullscreen} onKeyDown={keyboard}
       onCancel={(event) => { event.preventDefault(); escape(); }}>
+      <CaptionBar fullscreen={fullscreen} />
       <AeroToolbar className={styles.heading} data-tone="glass">
         <AeroButton variant="toolbar" onClick={onClose}><AeroIcon name="back" size={18} /> Gallery</AeroButton>
         <span className={styles.name} title={name}>{name}</span>

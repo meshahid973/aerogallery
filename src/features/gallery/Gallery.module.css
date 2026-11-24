@@ -3,8 +3,8 @@
   min-height: 0;
   overflow: auto;
   padding: 8px 5px;
-  background: linear-gradient(90deg, #f3f8fb, #eaf3f8);
-  border-right: 1px solid #d3e2eb;
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
 }
 .sidebarHeading {
   display: flex;
@@ -28,7 +28,7 @@
   background: var(--selection-gradient);
   border-color: transparent;
 }
-.treeRow:not([data-current="true"]):hover { background: #d7edfa; border-color: transparent; }
+.treeRow:not([data-current="true"]):hover { background: var(--hover-surface); border-color: transparent; }
 .expander, .expanderSpacer { width: 18px; height: 26px; flex: 0 0 18px; }
 .expander {
   display: grid;
@@ -38,7 +38,7 @@
   padding: 0;
   cursor: pointer;
 }
-.chevron { width: 6px; height: 6px; border-right: 1.5px solid #42657c; border-bottom: 1.5px solid #42657c; transform: rotate(-45deg); }
+.chevron { width: 6px; height: 6px; border-right: 1.5px solid var(--text-muted); border-bottom: 1.5px solid var(--text-muted); transform: rotate(-45deg); }
 .chevron[data-open="true"] { transform: rotate(45deg); }
 .treeItem {
   display: flex;
@@ -65,6 +65,8 @@
   background: var(--paper);
   padding: 12px;
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  contain: layout paint;
 }
 .empty {
   display: flex;
@@ -98,7 +100,7 @@
   background: transparent;
   cursor: pointer;
 }
-.photo:not([aria-pressed="true"]):hover { background: #e7f4fc; border-color: #bdd6e8; }
+.photo:not([aria-pressed="true"]):hover { background: var(--hover-surface); border-color: var(--line); }
 .imageFrame {
   position: relative;
   width: 100%;
@@ -106,12 +108,13 @@
   display: grid;
   place-items: center;
   border: 0;
-  background: #f4f8fa;
+  background: var(--photo-surface);
   overflow: hidden;
+  border-radius: 2px;
 }
 .thumbnail { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .filename { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.status { flex: 0 0 auto; min-height: 30px; border-top: 1px solid #dce8ef; gap: 9px; background: #f5fafc; box-shadow: none; }
+.status { flex: 0 0 auto; min-height: 30px; border-top: 1px solid var(--line); gap: 9px; background: var(--toolbar-gradient); box-shadow: none; }
 .progress { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
 .progress :global(.aero-spinner) { width: 13px; height: 13px; }
 .count { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-muted); }
@@ -123,3 +126,9 @@
   .imageFrame { outline: 1px solid CanvasText; }
   .chevron { border-color: ButtonText; }
 }
+
+.photoCell { contain: layout paint; }
+.previewError { font-size: 11px; line-height: 1.2; color: var(--error); padding: 3px 5px; text-align: center; }
+.previewPending { opacity: .55; }
+.gallery:has(dialog[open]) > :not(dialog) { visibility: hidden; }
+.gallery:has(dialog[open]) { background: transparent; }

@@ -1,8 +1,9 @@
 import { useDeferredValue, useState } from 'react';
 import { AeroButton, AeroIconButton, AeroInput, AeroSelect, AeroToolbar } from './components/aero/controls';
 import { AeroIcon } from './components/aero/Icon';
-import { glassDensities, readDensity, saveDensity } from './lib/appearance';
-import type { GlassDensity } from './lib/appearance';
+import { CaptionBar } from './components/aero/CaptionBar';
+import { glassDensities, readDensity, saveDensity, themes, themeNames, readTheme, saveTheme } from './lib/appearance';
+import type { GlassDensity, Theme } from './lib/appearance';
 import { folderKey, isDesktop } from './lib/desktop';
 import { FolderTree } from './features/gallery/FolderTree';
 import { GalleryPane } from './features/gallery/GalleryPane';
@@ -13,6 +14,7 @@ import styles from './App.module.css';
 const nativeGlass = isDesktop && /Windows/i.test(navigator.userAgent);
 
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(readTheme);
   const [density, setDensity] = useState<GlassDensity>(readDensity);
   const [sort, setSort] = useState<SortOrder>('name');
   const [size, setSize] = useState(1);
@@ -38,7 +40,8 @@ export default function App() {
   }
 
   return (
-    <div className={styles.shell} data-glass={density} data-native-glass={nativeGlass}>
+    <div className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass}>
+      <CaptionBar />
       <AeroToolbar className={styles.commands} data-tone="glass" aria-label="Library commands">
         <div className={styles.actions}>
           <AeroButton variant="toolbar" disabled={!isDesktop || busy} onClick={() => void gallery.add()}>
@@ -72,6 +75,12 @@ export default function App() {
         <AeroIconButton variant="toolbar" icon="appearance" label="Appearance" popoverTarget="appearance-panel" />
       </AeroToolbar>
       <div id="appearance-panel" popover="auto" className={styles.appearance}>
+        <div className={styles.themeChoices} role="group" aria-label="Theme">
+          {themes.map((choice) => <button type="button" className={styles.themeChoice} key={choice} aria-pressed={theme === choice} onClick={() => { setTheme(choice); setPreferenceError(saveTheme(choice) ? '' : 'Appearance could not be saved.'); }}>
+            <span className={styles.themeSample} data-theme={choice} aria-hidden="true"><span /><i /></span>
+            {themeNames[choice]}
+          </button>)}
+        </div>
         <label htmlFor="glass-density">Glass density</label>
         <AeroSelect id="glass-density" value={density} onChange={(event) => changeDensity(event.currentTarget.value)}>
           <option value="clear">Clear</option>

@@ -34,18 +34,18 @@
   transition: border-color var(--transition-fast);
 }
 .aero-icon-button { padding: 3px; min-width: 30px; }
-.aero-button--accent { background: var(--green-gradient); border-color: #568638; color: #234619; }
+.aero-button--accent { background: var(--green-gradient); border-color: var(--line-strong); color: var(--text); }
 .aero-button--toolbar { background: transparent; border-color: transparent; box-shadow: none; padding-inline: 7px; }
 .aero-button--toolbar.aero-icon-button { padding-inline: 4px; }
-.aero-button:not(:disabled):hover, .aero-select:not(:disabled):hover { background: var(--blue-gradient); border-color: #4386b2; box-shadow: var(--edge-light), var(--raised-shadow); }
-.aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: #3a7024; }
+.aero-button:not(:disabled):hover, .aero-select:not(:disabled):hover { background: var(--blue-gradient); border-color: var(--line-strong); box-shadow: var(--edge-light), var(--raised-shadow); }
+.aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: var(--focus); }
 .aero-button:not(:disabled):active, .aero-button[aria-pressed="true"]:not(:disabled) { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
-.aero-button:disabled, .aero-select:disabled { background: #e5ebef; border-color: #b5c4cf; color: #647988; box-shadow: none; }
+.aero-button:disabled, .aero-select:disabled { background: var(--photo-surface); border-color: var(--line); color: var(--text-muted); box-shadow: none; }
 .aero-button--toolbar:disabled { background: transparent; border-color: transparent; }
 .aero-button:disabled img { opacity: .45; }
 .aero-select { padding: 3px 7px; cursor: pointer; max-width: 100%; }
 .aero-input { background: var(--white); box-shadow: var(--recessed-shadow); padding: 4px 8px; min-width: 0; }
-.aero-input:disabled { background: #edf3f6; color: var(--text-muted); }
+.aero-input:disabled { background: var(--photo-surface); color: var(--text-muted); }
 .aero-range {
   appearance: none;
   width: 92px;
@@ -55,13 +55,13 @@
   background: transparent;
   cursor: pointer;
 }
-.aero-range::-webkit-slider-runnable-track { height: 5px; border: 1px solid #8ba5b8; border-radius: 2px; background: #d9e7ed; box-shadow: var(--recessed-shadow); }
+.aero-range::-webkit-slider-runnable-track { height: 5px; border: 1px solid var(--line); border-radius: 2px; background: var(--scroll-track); box-shadow: var(--recessed-shadow); }
 .aero-range::-webkit-slider-thumb { appearance: none; width: 12px; height: 17px; margin-top: -7px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--silver-gradient); box-shadow: var(--edge-light), var(--raised-shadow); }
 .aero-range:not(:disabled):hover::-webkit-slider-thumb { background: var(--blue-gradient); }
-.aero-range::-moz-range-track { height: 5px; border: 1px solid #8ba5b8; border-radius: 2px; background: #d9e7ed; box-shadow: var(--recessed-shadow); }
+.aero-range::-moz-range-track { height: 5px; border: 1px solid var(--line); border-radius: 2px; background: var(--scroll-track); box-shadow: var(--recessed-shadow); }
 .aero-range::-moz-range-thumb { width: 11px; height: 16px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--silver-gradient); box-shadow: var(--edge-light), var(--raised-shadow); }
 .aero-range:disabled { opacity: .5; }
-.aero-spinner { width: 17px; height: 17px; border: 2px solid #b9d9ea; border-top-color: #2679b4; border-radius: 50%; animation: aero-spin .8s linear infinite; }
+.aero-spinner { width: 17px; height: 17px; border: 2px solid var(--line); border-top-color: var(--focus); border-radius: 50%; animation: aero-spin .8s linear infinite; }
 @keyframes aero-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .aero-spinner { animation: none; } }
 @media (forced-colors: active) {
@@ -70,3 +70,10 @@
   .aero-button:focus-visible { outline-color: Highlight; }
   .aero-range { appearance: auto; }
 }
+
+[data-theme] ::-webkit-scrollbar { width: 13px; height: 13px; }
+[data-theme] ::-webkit-scrollbar-track { background: var(--scroll-track); }
+[data-theme] ::-webkit-scrollbar-thumb { background: var(--silver-gradient); border: 1px solid var(--line-strong); border-radius: 4px; box-shadow: var(--edge-light); }
+[data-theme] ::-webkit-scrollbar-thumb:hover { background: var(--blue-gradient); }
+[data-theme] ::-webkit-scrollbar-corner { background: var(--scroll-track); }
+@media (forced-colors: active) { [data-theme] ::-webkit-scrollbar-thumb { background: ButtonFace; border: 1px solid ButtonText; } }

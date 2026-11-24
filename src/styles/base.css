@@ -10,3 +10,5 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 h1, h2, p { margin: 0; }
 img { display: block; object-fit: contain; }
+
+html, body { overflow: hidden; }

@@ -10,7 +10,7 @@
         "minHeight": 460,
         "center": true,
         "resizable": true,
-        "decorations": true,
+        "decorations": false,
         "dragDropEnabled": false,
         "theme": "Light",
         "transparent": true,
@@ -19,7 +19,8 @@
           "effects": [
             "acrylic"
           ]
-        }
+        },
+        "shadow": true
       }
     ]
   }

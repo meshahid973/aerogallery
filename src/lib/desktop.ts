@@ -47,11 +47,18 @@ export const pickFolder = () => invoke<Root | null>('pick_folder');
 export const readFolder = (folder: Folder, refresh = false) => bounded(invoke<Listing>('read_folder', { ...folder, refresh }), 15000, 'Folder is taking longer than expected. Try Refresh.');
 export const folderRevision = (folder: Folder) => bounded(invoke<number>('folder_revision', { ...folder }), 5000, 'Cannot check folder changes.');
 export const removeRoot = (rootId: number) => invoke<void>('remove_root', { rootId });
+function binaryBuffer(value: unknown): ArrayBuffer {
+  if (value instanceof ArrayBuffer) return value;
+  if (ArrayBuffer.isView(value)) return new Uint8Array(value.buffer, value.byteOffset, value.byteLength).slice().buffer;
+  if (Array.isArray(value) && value.length <= 64 * 1024 * 1024) return Uint8Array.from(value).buffer;
+  throw new Error('The desktop returned an invalid image response.');
+}
+
 export const readThumbnail = (folder: Folder, name: string) =>
-  invoke<ArrayBuffer>('thumbnail', { rootId: folder.rootId, parts: [...folder.parts, name] });
+  invoke<unknown>('thumbnail', { rootId: folder.rootId, parts: [...folder.parts, name] }).then(binaryBuffer);
 export const readMetadata = (folder: Folder, name: string) =>
   invoke<PhotoMetadata | null>('photo_metadata', { rootId: folder.rootId, parts: [...folder.parts, name] });
 
 export const readFullImage = (folder: Folder, photo: Photo) =>
-  invoke<ArrayBuffer>('full_image', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp });
+  invoke<unknown>('full_image', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp }).then(binaryBuffer);
 export const setViewerFullscreen = (enabled: boolean) => invoke<void>('viewer_fullscreen', { enabled });

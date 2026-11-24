@@ -27,3 +27,5 @@ The native icon is a temporary public-domain picture icon, not an original AeroG
 ## Interface references
 
 The CSS is original application code inspired by historical [Windows UX guidance](https://learn.microsoft.com/en-us/windows/win32/uxguide/guidelines), [7.css](https://github.com/khang-nd/7.css), and the [Frutiger Obsidian theme](https://github.com/gelogonza/frutiger-obsidian-theme). No upstream stylesheet, proprietary Windows icons, wallpaper, font files or generated artwork is bundled. The background uses CSS gradients and the UI uses installed system fonts.
+
+The three user-supplied CSS references informed material techniques only. All theme CSS is newly authored; remote images, cursors, fonts and decorative effects in those files are not copied into the app.

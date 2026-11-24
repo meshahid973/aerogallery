@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { readThumbnail } from '../../lib/desktop';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { folderKey, readThumbnail } from '../../lib/desktop';
 import type { Folder } from '../../lib/desktop';
 
 type Job = { run: () => Promise<void>; started: boolean };
@@ -36,72 +36,51 @@ function enqueue(run: Job['run']) {
   queue.push(job);
   drain();
   return () => {
-    if (job.started) return false;
-    const index = queue.indexOf(job);
-    if (index !== -1) queue.splice(index, 1);
-    return true;
-  };
-}
-
-const observers = new WeakMap<Element, (visible: boolean) => void>();
-let observer: IntersectionObserver | undefined;
-
-function observe(element: Element, onVisibility: (visible: boolean) => void) {
-  if (!('IntersectionObserver' in window)) {
-    onVisibility(true);
-    return () => {};
-  }
-  observer ??= new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      observers.get(entry.target)?.(entry.isIntersecting);
+    if (!job.started) {
+      const index = queue.indexOf(job);
+      if (index !== -1) queue.splice(index, 1);
     }
-  }, { rootMargin: '160px' });
-  observers.set(element, onVisibility);
-  observer.observe(element);
-  return () => {
-    observer?.unobserve(element);
-    observers.delete(element);
   };
 }
 
-export function useThumbnail(folder: Folder, name: string) {
-  const ref = useRef<HTMLSpanElement>(null);
+export function useThumbnail(folder: Folder, name: string, stamp: string) {
   const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const scope = folderKey(folder);
+  const latestFolder = useRef(folder);
+  latestFolder.current = folder;
+  const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const markFailed = useCallback(() => {
+    setUrl(null);
+    setError('Image could not be displayed');
+  }, []);
+
   useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
     let active = true;
-    let settled = false;
     let objectUrl: string | undefined;
-    let cancel: (() => boolean) | undefined;
-    const stop = observe(element, (visible) => {
-      if (!active || settled) return;
-      if (!visible) {
-        if (cancel?.()) cancel = undefined;
-        return;
+    setUrl(null);
+    setError('');
+    const current = latestFolder.current;
+    const cancel = enqueue(async () => {
+      try {
+        const bytes = await readThumbnail(current, name);
+        if (!active) return;
+        const signature = new Uint8Array(bytes, 0, Math.min(4, bytes.byteLength));
+        const type = signature[0] === 0xff && signature[1] === 0xd8 ? 'image/jpeg' : signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4e && signature[3] === 0x47 ? 'image/png' : '';
+        if (!type) throw new Error('Invalid thumbnail data');
+        objectUrl = URL.createObjectURL(new Blob([bytes], { type }));
+        setUrl(objectUrl);
+      } catch (failure) {
+        if (active) setError(typeof failure === 'string' ? failure : failure instanceof Error ? failure.message : 'Thumbnail unavailable');
       }
-      if (cancel) return;
-      cancel = enqueue(async () => {
-        try {
-          const bytes = await readThumbnail(folder, name);
-          if (!active) return;
-          objectUrl = URL.createObjectURL(new Blob([bytes], { type: new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength))[0] === 0xff ? 'image/jpeg' : 'image/png' }));
-          setUrl(objectUrl);
-        } catch {
-          if (active) setFailed(true);
-        } finally {
-          settled = true;
-          if (active) stop();
-        }
-      });
     });
     return () => {
       active = false;
-      stop();
-      cancel?.();
+      cancel();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [folder, name]);
-  return { ref, url, failed };
+  }, [scope, name, stamp, attempt]);
+
+  return { url, error, retry, markFailed };
 }
