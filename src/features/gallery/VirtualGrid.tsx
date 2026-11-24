@@ -23,7 +23,7 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   const { url, error, retry, markFailed } = useThumbnail(folder, photo.name, photo.stamp, previewRevision);
   return (
     <li className={styles.photoCell} aria-posinset={index + 1} aria-setsize={total}>
-      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onKeyDown={(event) => { if (error && event.key.toLowerCase() === 'r') { event.preventDefault(); retry(); } }} onContextMenu={error ? (event) => { event.preventDefault(); retry(); } : undefined} title={error ? `${photo.name} — ${error} (R or right-click to retry)` : photo.name}>
+      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onKeyDown={(event) => { if (error && !event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === 'r') { event.preventDefault(); retry(); } }} onContextMenu={error ? (event) => { event.preventDefault(); retry(); } : undefined} title={error ? `${photo.name} — ${error} (R or right-click to retry)` : photo.name}>
         <span className={styles.imageFrame} >
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" onError={markFailed} /> : error ? <span className={styles.previewError}>Preview unavailable</span> : <span className={styles.previewPending}><AeroIcon name="picture" size={34} /></span>}
         </span>
@@ -51,7 +51,7 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
   const preferred = TILE_WIDTHS[size] ?? TILE_WIDTHS[1];
   const columns = Math.max(1, Math.floor((metrics.width + GAP) / (preferred + GAP)));
   const tile = metrics.width > 0 ? Math.floor((metrics.width - GAP * (columns - 1)) / columns) : preferred;
-  const rowHeight = Math.ceil((tile - 12) * 0.75) + 29;
+  const rowHeight = Math.ceil((tile - 12) * 0.75) + 33;
   const stride = rowHeight + GAP;
   const rows = Math.ceil(photos.length / columns);
   const start = Math.min(Math.max(0, rows - 1), Math.max(0, Math.floor(metrics.top / stride) - OVERSCAN));
@@ -113,7 +113,7 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
     const target = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-photo-index]');
     const current = Number(target?.dataset.photoIndex);
     if (!target || !Number.isInteger(current)) return;
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'Enter') { const photo = photos[current]; if (photo) { event.preventDefault(); onOpen(photo.name); } return; }
     const steps: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns, PageUp: -Math.max(1, Math.floor(metrics.height / stride)) * columns, PageDown: Math.max(1, Math.floor(metrics.height / stride)) * columns };
     if (!Object.hasOwn(steps, event.key) && event.key !== 'Home' && event.key !== 'End') return;

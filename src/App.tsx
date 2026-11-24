@@ -50,25 +50,23 @@ export default function App() {
 
   function shortcuts(event: KeyboardEvent<HTMLDivElement>) {
     if (event.defaultPrevented || shell.current?.querySelector('dialog[open]')) return;
-    const key = event.key.toLowerCase();
+    const pressed = event.key.toLowerCase();
     const searchInput = shell.current?.querySelector<HTMLInputElement>('input[type="search"]');
-    if (event.ctrlKey && !event.altKey && !event.shiftKey && key === 'f') {
+    if (event.ctrlKey && !event.altKey && !event.shiftKey && pressed === 'f') {
       if (searchInput && !searchInput.disabled) { event.preventDefault(); searchInput.focus(); searchInput.select(); }
-    } else if (event.ctrlKey && !event.altKey && !event.shiftKey && key === 'o') {
+    } else if (event.ctrlKey && !event.altKey && !event.shiftKey && pressed === 'o') {
       if (isDesktop && !busy) { event.preventDefault(); void gallery.add(); }
-    } else if (key === 'f5' && !event.ctrlKey && !event.altKey) {
+    } else if (pressed === 'f5' && !event.ctrlKey && !event.altKey) {
       event.preventDefault();
       refresh();
     } else if (event.altKey && !event.ctrlKey && !busy) {
-      if (key === 'arrowleft' && gallery.canBack) { event.preventDefault(); void gallery.back(); }
-      if (key === 'arrowup' && active?.parts.length) { event.preventDefault(); void gallery.select({ ...active, parts: active.parts.slice(0, -1) }); }
-    } else if (key === 'escape' && event.target === searchInput && query) {
+      if (pressed === 'arrowleft' && gallery.canBack) { event.preventDefault(); void gallery.back(); }
+      if (pressed === 'arrowup' && active?.parts.length) { event.preventDefault(); void gallery.select({ ...active, parts: active.parts.slice(0, -1) }); }
+    } else if (pressed === 'escape' && event.target === searchInput && query) {
       event.preventDefault();
-      setSearch({ folder: keyForFolder(), value: '' });
+      setSearch({ folder: key, value: '' });
     }
   }
-
-  function keyForFolder() { return active ? folderKey(active) : 'library'; }
 
   return (
     <div ref={shell} onKeyDown={shortcuts} className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass}>
