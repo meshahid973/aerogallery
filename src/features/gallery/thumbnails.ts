@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { readThumbnail } from '../../lib/desktop';
 import type { Folder } from '../../lib/desktop';
 
-type Job = { run: () => Promise<void>; cancelled: boolean };
+type Job = { run: () => Promise<void>; started: boolean };
 const queue: Job[] = [];
 let running = 0;
 
 function drain() {
   while (running < 2 && queue.length) {
     const job = queue.shift();
-    if (!job || job.cancelled) continue;
+    if (!job) continue;
+    job.started = true;
     running += 1;
     void job.run().finally(() => {
       running -= 1;
@@ -19,33 +20,31 @@ function drain() {
 }
 
 function enqueue(run: Job['run']) {
-  const job = { run, cancelled: false };
+  const job = { run, started: false };
   queue.push(job);
   drain();
   return () => {
-    job.cancelled = true;
+    if (job.started) return false;
     const index = queue.indexOf(job);
     if (index !== -1) queue.splice(index, 1);
+    return true;
   };
 }
 
-const observers = new WeakMap<Element, () => void>();
+const observers = new WeakMap<Element, (visible: boolean) => void>();
 let observer: IntersectionObserver | undefined;
 
-function observe(element: Element, onVisible: () => void) {
+function observe(element: Element, onVisibility: (visible: boolean) => void) {
   if (!('IntersectionObserver' in window)) {
-    onVisible();
+    onVisibility(true);
     return () => {};
   }
   observer ??= new IntersectionObserver((entries) => {
     for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      observer?.unobserve(entry.target);
-      observers.get(entry.target)?.();
-      observers.delete(entry.target);
+      observers.get(entry.target)?.(entry.isIntersecting);
     }
   }, { rootMargin: '160px' });
-  observers.set(element, onVisible);
+  observers.set(element, onVisibility);
   observer.observe(element);
   return () => {
     observer?.unobserve(element);
@@ -56,13 +55,21 @@ function observe(element: Element, onVisible: () => void) {
 export function useThumbnail(folder: Folder, name: string) {
   const ref = useRef<HTMLSpanElement>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
     let active = true;
+    let settled = false;
     let objectUrl: string | undefined;
-    let cancel: (() => void) | undefined;
-    const stop = observe(element, () => {
+    let cancel: (() => boolean) | undefined;
+    const stop = observe(element, (visible) => {
+      if (!active || settled) return;
+      if (!visible) {
+        if (cancel?.()) cancel = undefined;
+        return;
+      }
+      if (cancel) return;
       cancel = enqueue(async () => {
         try {
           const bytes = await readThumbnail(folder, name);
@@ -70,7 +77,10 @@ export function useThumbnail(folder: Folder, name: string) {
           objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
           setUrl(objectUrl);
         } catch {
-          if (active) setUrl(null);
+          if (active) setFailed(true);
+        } finally {
+          settled = true;
+          if (active) stop();
         }
       });
     });
@@ -81,5 +91,5 @@ export function useThumbnail(folder: Folder, name: string) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [folder, name]);
-  return { ref, url };
+  return { ref, url, failed };
 }

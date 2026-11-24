@@ -19,10 +19,10 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, selected, tabbable, o
   tabbable: boolean;
   onSelect: (name: string) => void;
 }) {
-  const { ref, url } = useThumbnail(folder, photo.name);
+  const { ref, url, failed } = useThumbnail(folder, photo.name);
   return (
     <li className={styles.photoCell}>
-      <button type="button" className={styles.photo} data-photo="" aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} title={photo.name}>
+      <button type="button" className={styles.photo} data-photo="" aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} title={failed ? `${photo.name} — preview unavailable` : photo.name}>
         <span className={styles.imageFrame} ref={ref}>
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" /> : <AeroIcon name="picture" size={40} />}
         </span>
