@@ -1,4 +1,5 @@
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { AeroButton, AeroIconButton, AeroInput, AeroSelect, AeroToolbar } from './components/aero/controls';
 import { AeroIcon } from './components/aero/Icon';
 import { CaptionBar } from './components/aero/CaptionBar';
@@ -18,6 +19,8 @@ export default function App() {
   const [density, setDensity] = useState<GlassDensity>(readDensity);
   const [sort, setSort] = useState<SortOrder>('name');
   const [size, setSize] = useState(1);
+  const [previewRevision, setPreviewRevision] = useState(0);
+  const shell = useRef<HTMLDivElement>(null);
   const [preferenceError, setPreferenceError] = useState('');
   const [search, setSearch] = useState({ folder: '', value: '' });
   const deferredSearch = useDeferredValue(search);
@@ -39,17 +42,45 @@ export default function App() {
     setPreferenceError(saveDensity(next) ? '' : 'Appearance could not be saved.');
   }
 
+  function refresh() {
+    if (!active || busy) return;
+    setPreviewRevision((value) => value + 1);
+    void gallery.refresh();
+  }
+
+  function shortcuts(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.defaultPrevented || shell.current?.querySelector('dialog[open]')) return;
+    const key = event.key.toLowerCase();
+    const searchInput = shell.current?.querySelector<HTMLInputElement>('input[type="search"]');
+    if (event.ctrlKey && !event.altKey && !event.shiftKey && key === 'f') {
+      if (searchInput && !searchInput.disabled) { event.preventDefault(); searchInput.focus(); searchInput.select(); }
+    } else if (event.ctrlKey && !event.altKey && !event.shiftKey && key === 'o') {
+      if (isDesktop && !busy) { event.preventDefault(); void gallery.add(); }
+    } else if (key === 'f5' && !event.ctrlKey && !event.altKey) {
+      event.preventDefault();
+      refresh();
+    } else if (event.altKey && !event.ctrlKey && !busy) {
+      if (key === 'arrowleft' && gallery.canBack) { event.preventDefault(); void gallery.back(); }
+      if (key === 'arrowup' && active?.parts.length) { event.preventDefault(); void gallery.select({ ...active, parts: active.parts.slice(0, -1) }); }
+    } else if (key === 'escape' && event.target === searchInput && query) {
+      event.preventDefault();
+      setSearch({ folder: keyForFolder(), value: '' });
+    }
+  }
+
+  function keyForFolder() { return active ? folderKey(active) : 'library'; }
+
   return (
-    <div className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass}>
+    <div ref={shell} onKeyDown={shortcuts} className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass}>
       <CaptionBar />
       <AeroToolbar className={styles.commands} data-tone="glass" aria-label="Library commands">
         <div className={styles.actions}>
-          <AeroButton variant="toolbar" disabled={!isDesktop || busy} onClick={() => void gallery.add()}>
+          <AeroButton variant="toolbar" disabled={!isDesktop || busy} title="Add folder (Ctrl+O)" onClick={() => void gallery.add()}>
             <AeroIcon name="openFolder" size={22} /> Add folder
           </AeroButton>
-          <AeroIconButton variant="toolbar" icon="back" label="Back" disabled={!gallery.canBack || busy} onClick={() => void gallery.back()} />
-          <AeroIconButton variant="toolbar" icon="up" label="Parent folder" disabled={!active?.parts.length || busy} onClick={() => active && void gallery.select({ ...active, parts: active.parts.slice(0, -1) })} />
-          <AeroIconButton variant="toolbar" icon="refresh" label="Refresh folder" disabled={!active || busy} onClick={() => void gallery.refresh()} />
+          <AeroIconButton variant="toolbar" icon="back" label="Back (Alt+Left)" disabled={!gallery.canBack || busy} onClick={() => void gallery.back()} />
+          <AeroIconButton variant="toolbar" icon="up" label="Parent folder (Alt+Up)" disabled={!active?.parts.length || busy} onClick={() => active && void gallery.select({ ...active, parts: active.parts.slice(0, -1) })} />
+          <AeroIconButton variant="toolbar" icon="refresh" label="Refresh folder (F5)" disabled={!active || busy} onClick={refresh} />
           <AeroIconButton variant="toolbar" icon="remove" label="Remove source folder from library" disabled={!active || busy} onClick={() => void gallery.remove()} />
         </div>
         <nav className={styles.breadcrumbs} aria-label="Current folder">
@@ -62,7 +93,7 @@ export default function App() {
         </nav>
         <div className={styles.search}>
           <AeroIcon name="search" size={16} />
-          <AeroInput type="search" aria-label="Search pictures" placeholder="Search pictures" value={query} disabled={!listing || busy} onChange={(event) => setSearch({ folder: key, value: event.currentTarget.value })} />
+          <AeroInput type="search" aria-label="Search pictures" placeholder="Search pictures" title="Search pictures (Ctrl+F)" value={query} disabled={!listing || busy} onChange={(event) => setSearch({ folder: key, value: event.currentTarget.value })} />
         </div>
         <AeroSelect className={styles.sort} aria-label="Sort pictures" title="Sort pictures" value={sort} disabled={!listing || busy} onChange={(event) => {
           const value = event.currentTarget.value;
@@ -91,7 +122,7 @@ export default function App() {
       </div>
       <div className={styles.workspace}>
         <FolderTree roots={roots} active={active} cache={gallery.cache} expanded={gallery.expanded} busy={busy} onSelect={(folder) => void gallery.select(folder)} onToggle={gallery.toggle} />
-        <GalleryPane key={JSON.stringify([key, galleryQuery, sort])} folder={active} listing={listing} busy={busy} error={gallery.error} query={galleryQuery} sort={sort} size={size} onSize={setSize} onAdd={() => void gallery.add()} />
+        <GalleryPane key={JSON.stringify([key, galleryQuery, sort])} folder={active} listing={listing} busy={busy} error={gallery.error} query={galleryQuery} sort={sort} size={size} previewRevision={previewRevision} onSize={setSize} onAdd={() => void gallery.add()} />
       </div>
     </div>
   );

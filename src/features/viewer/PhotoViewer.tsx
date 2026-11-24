@@ -180,8 +180,8 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
           <AeroIconButton icon="forward" label="Next picture (Right)" disabled={index < 0 || index >= photos.length - 1} onClick={() => move(1)} />
         </div>
         <div className={styles.group}>
-          <AeroButton className={styles.glyph} title="Rotate left (Shift+R)" aria-label="Rotate left" disabled={!ready} onClick={() => stage.current?.rotate(-90)}>↶</AeroButton>
-          <AeroButton className={styles.glyph} title="Rotate right (R)" aria-label="Rotate right" disabled={!ready} onClick={() => stage.current?.rotate(90)}>↷</AeroButton>
+          <AeroButton className={styles.glyph} title="Rotate left (Shift+R)" aria-label="Rotate left" disabled={!ready} onClick={() => stage.current?.rotate(-90)}><AeroIcon name="rotateLeft" size={18} /></AeroButton>
+          <AeroButton className={styles.glyph} title="Rotate right (R)" aria-label="Rotate right" disabled={!ready} onClick={() => stage.current?.rotate(90)}><AeroIcon name="rotateRight" size={18} /></AeroButton>
           <AeroSelect aria-label="Slideshow interval" title="Slideshow interval" value={interval} onChange={(event) => setInterval(Number(event.currentTarget.value))}>
             <option value={3}>3 s</option><option value={5}>5 s</option><option value={10}>10 s</option>
           </AeroSelect>

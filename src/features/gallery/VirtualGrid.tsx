@@ -9,20 +9,21 @@ const TILE_WIDTHS = [104, 142, 206] as const;
 const GAP = 8;
 const OVERSCAN = 2;
 
-const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selected, tabbable, onSelect, onOpen }: {
+const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selected, tabbable, previewRevision, onSelect, onOpen }: {
   folder: Folder;
   photo: Photo;
   index: number;
   total: number;
   selected: boolean;
   tabbable: boolean;
+  previewRevision: number;
   onSelect: (name: string) => void;
   onOpen: (name: string) => void;
 }) {
-  const { url, error, retry, markFailed } = useThumbnail(folder, photo.name, photo.stamp);
+  const { url, error, retry, markFailed } = useThumbnail(folder, photo.name, photo.stamp, previewRevision);
   return (
     <li className={styles.photoCell} aria-posinset={index + 1} aria-setsize={total}>
-      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onContextMenu={error ? (event) => { event.preventDefault(); retry(); } : undefined} title={error ? `${photo.name} — ${error} (right-click to retry)` : photo.name}>
+      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onKeyDown={(event) => { if (error && event.key.toLowerCase() === 'r') { event.preventDefault(); retry(); } }} onContextMenu={error ? (event) => { event.preventDefault(); retry(); } : undefined} title={error ? `${photo.name} — ${error} (R or right-click to retry)` : photo.name}>
         <span className={styles.imageFrame} >
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" onError={markFailed} /> : error ? <span className={styles.previewError}>Preview unavailable</span> : <span className={styles.previewPending}><AeroIcon name="picture" size={34} /></span>}
         </span>
@@ -32,11 +33,12 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   );
 });
 
-export function VirtualGrid({ folder, photos, selected, size, onSelect, onOpen, error, busy }: {
+export function VirtualGrid({ folder, photos, selected, size, previewRevision, onSelect, onOpen, error, busy }: {
   folder: Folder;
   photos: Photo[];
   selected: string | null;
   size: number;
+  previewRevision: number;
   onSelect: (name: string) => void;
   onOpen: (name: string) => void;
   error: string;
@@ -111,7 +113,7 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, onOpen, 
     const target = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-photo-index]');
     const current = Number(target?.dataset.photoIndex);
     if (!target || !Number.isInteger(current)) return;
-    if (event.key === 'F5') return;
+    if (event.defaultPrevented) return;
     if (event.key === 'Enter') { const photo = photos[current]; if (photo) { event.preventDefault(); onOpen(photo.name); } return; }
     const steps: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns, PageUp: -Math.max(1, Math.floor(metrics.height / stride)) * columns, PageDown: Math.max(1, Math.floor(metrics.height / stride)) * columns };
     if (!Object.hasOwn(steps, event.key) && event.key !== 'Home' && event.key !== 'End') return;
@@ -142,7 +144,7 @@ export function VirtualGrid({ folder, photos, selected, size, onSelect, onOpen, 
         paddingTop: start * stride,
         paddingBottom: Math.max(0, rows - Math.max(start + 1, end)) * stride,
       }} onKeyDown={navigate} aria-label="Picture thumbnails">
-        {photos.slice(first, last).map((photo, offset) => <PhotoTile key={`${photo.name}:${photo.stamp}`} folder={folder} photo={photo} index={first + offset} total={photos.length} selected={photo.name === selected} tabbable={first + offset === tabIndex} onSelect={onSelect} onOpen={onOpen} />)}
+        {photos.slice(first, last).map((photo, offset) => <PhotoTile key={`${photo.name}:${photo.stamp}`} folder={folder} photo={photo} index={first + offset} total={photos.length} selected={photo.name === selected} tabbable={first + offset === tabIndex} previewRevision={previewRevision} onSelect={onSelect} onOpen={onOpen} />)}
       </ul>
     </div>
   );

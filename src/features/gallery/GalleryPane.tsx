@@ -26,14 +26,14 @@ interface Props {
   sort: SortOrder;
   query: string;
   size: number;
+  previewRevision: number;
   onSize: (size: number) => void;
   onAdd: () => void;
 }
 
-export function GalleryPane({ folder, listing, busy, error, query, sort, size, onSize, onAdd }: Props) {
+export function GalleryPane({ folder, listing, busy, error, query, sort, size, previewRevision, onSize, onAdd }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
-  const [previewRevision, setPreviewRevision] = useState(0);
   const open = useCallback((name: string) => { setSelected(name); setViewing(name); }, []);
   const close = useCallback(() => setViewing(null), []);
   const photos = useMemo(() => {
@@ -64,7 +64,7 @@ export function GalleryPane({ folder, listing, busy, error, query, sort, size, o
 
   return (
     <main className={styles.gallery} aria-label="Pictures">
-      {folder && photos.length > 0 ? <VirtualGrid key={JSON.stringify([query, sort, previewRevision])} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} onOpen={open} error={error} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
+      {folder && photos.length > 0 ? <VirtualGrid key={JSON.stringify([query, sort])} previewRevision={previewRevision} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} onOpen={open} error={error} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {empty && (
           <div className={styles.empty}>
@@ -76,7 +76,6 @@ export function GalleryPane({ folder, listing, busy, error, query, sort, size, o
       <AeroToolbar className={styles.status}>
         <span className={styles.count} role="status" title={metadataTitle}>{busy ? <span className={styles.progress}><span className="aero-spinner" aria-hidden="true" /> Opening folder…</span> : selectedPhoto ? `${selectedPhoto.name} · ${formatBytes(selectedPhoto.bytes)}${(selectedPhoto.width ?? metadata?.width) && (selectedPhoto.height ?? metadata?.height) ? ` · ${selectedPhoto.width ?? metadata?.width} × ${selectedPhoto.height ?? metadata?.height}` : ''}` : `${photos.length.toLocaleString()} ${photos.length === 1 ? 'picture' : 'pictures'}${listing?.skipped ? ` · ${listing.skipped} unreadable` : ''}`}</span>
         <AeroRange min={0} max={2} step={1} value={size} disabled={!listing} aria-label="Thumbnail size" aria-valuetext={sizes[size]} title={`Thumbnail size: ${sizes[size]}`} onChange={(event) => onSize(Number(event.currentTarget.value))} />
-        <AeroButton variant="toolbar" title="Reload previews" aria-label="Reload previews" disabled={!photos.length} onClick={() => setPreviewRevision((value) => value + 1)}><AeroIcon name="refresh" size={16} /></AeroButton>
         <AeroButton variant="toolbar" disabled={!selectedPhoto} onClick={() => selectedPhoto && open(selectedPhoto.name)}>View</AeroButton>
       </AeroToolbar>
       {folder && viewing !== null && <Suspense fallback={null}><PhotoViewer folder={folder} photos={photos} name={viewing} onNavigate={open} onClose={close} /></Suspense>}

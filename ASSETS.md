@@ -19,6 +19,8 @@ The interface icons are from the Tango Desktop Project's 0.8.90 icon theme, rele
 | src/assets/icons/play.png | png-64/actions-media-playback-start.png |
 | src/assets/icons/pause.png | png-64/actions-media-playback-pause.png |
 | src/assets/icons/fullscreen.png | png-64/actions-view-fullscreen.png |
+| src/assets/icons/rotate-left.png | png-64/actions-edit-undo.png |
+| src/assets/icons/rotate-right.png | png-64/actions-edit-redo.png |
 | src-tauri/icons/icon.png | png-64/mimetypes-image-x-generic.png |
 | src-tauri/icons/icon.ico | ICO container of png-64/mimetypes-image-x-generic.png |
 

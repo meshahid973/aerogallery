@@ -19,23 +19,23 @@ export function CaptionBar({ title = 'AeroGallery', fullscreen = false }: { titl
     let active = true;
     let timer: number | undefined;
     const releases: (() => void)[] = [];
-    const window = getCurrentWindow();
+    const appWindow = getCurrentWindow();
     const sync = () => {
-      void window.isMaximized().then((value) => { if (active) setMaximized(value); }, () => {});
+      void appWindow.isMaximized().then((value) => { if (active) setMaximized(value); }, () => {});
     };
     const attach = (subscription: Promise<() => void>) => {
       void subscription.then((release) => { if (active) releases.push(release); else release(); }, () => {});
     };
     sync();
-    void window.isFocused().then((value) => { if (active) setFocused(value); }, () => {});
-    attach(window.onResized(() => {
-      globalThis.clearTimeout(timer);
-      timer = globalThis.setTimeout(sync, 100);
+    void appWindow.isFocused().then((value) => { if (active) setFocused(value); }, () => {});
+    attach(appWindow.onResized(() => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(sync, 100);
     }));
-    attach(window.onFocusChanged(({ payload }) => { if (active) setFocused(payload); }));
+    attach(appWindow.onFocusChanged(({ payload }) => { if (active) setFocused(payload); }));
     return () => {
       active = false;
-      globalThis.clearTimeout(timer);
+      window.clearTimeout(timer);
       for (const release of releases) release();
     };
   }, [fullscreen]);

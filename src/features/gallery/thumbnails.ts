@@ -43,7 +43,7 @@ function enqueue(run: Job['run']) {
   };
 }
 
-export function useThumbnail(folder: Folder, name: string, stamp: string) {
+export function useThumbnail(folder: Folder, name: string, stamp: string, revision: number) {
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -80,7 +80,7 @@ export function useThumbnail(folder: Folder, name: string, stamp: string) {
       cancel();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [scope, name, stamp, attempt]);
+  }, [scope, name, stamp, attempt, revision]);
 
   return { url, error, retry, markFailed };
 }

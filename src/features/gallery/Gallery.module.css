@@ -127,7 +127,8 @@
   .chevron { border-color: ButtonText; }
 }
 
-.photoCell { contain: layout paint; }
+.photoCell { contain: layout; }
+.photo:focus-visible { outline-offset: -2px; }
 .previewError { font-size: 11px; line-height: 1.2; color: var(--error); padding: 3px 5px; text-align: center; }
 .previewPending { opacity: .55; }
 .gallery:has(dialog[open]) > :not(dialog) { visibility: hidden; }
