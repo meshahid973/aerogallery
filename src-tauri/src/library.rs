@@ -92,7 +92,10 @@ struct Cache {
 
 impl Cache {
     fn get(&mut self, key: &CacheKey) -> Option<Vec<u8>> {
-        let index = self.items.iter().position(|(candidate, _)| candidate == key)?;
+        let index = self
+            .items
+            .iter()
+            .position(|(candidate, _)| candidate == key)?;
         let entry = self.items.remove(index)?;
         let data = entry.1.clone();
         self.items.push_front(entry);
@@ -103,7 +106,11 @@ impl Cache {
         if data.len() > CACHE_BYTES {
             return;
         }
-        if let Some(index) = self.items.iter().position(|(candidate, _)| candidate == &key) {
+        if let Some(index) = self
+            .items
+            .iter()
+            .position(|(candidate, _)| candidate == &key)
+        {
             if let Some((_, previous)) = self.items.remove(index) {
                 self.bytes -= previous.len();
             }
@@ -193,7 +200,14 @@ impl Library {
     }
 
     pub fn roots(&self) -> Result<Vec<Root>, String> {
-        Ok(self.0.sources.lock().map_err(lock_error)?.iter().map(|source| source.root.clone()).collect())
+        Ok(self
+            .0
+            .sources
+            .lock()
+            .map_err(lock_error)?
+            .iter()
+            .map(|source| source.root.clone())
+            .collect())
     }
 
     pub fn add(&self, selected: PathBuf) -> Result<Root, String> {
@@ -216,18 +230,29 @@ impl Library {
             |name| name.to_string_lossy().into_owned(),
         );
         let root = Root { id, name };
-        sources.push(Source { root: root.clone(), path });
+        sources.push(Source {
+            root: root.clone(),
+            path,
+        });
         Ok(root)
     }
 
     pub fn remove(&self, id: u32) -> Result<(), String> {
-        self.0.sources.lock().map_err(lock_error)?.retain(|source| source.root.id != id);
+        self.0
+            .sources
+            .lock()
+            .map_err(lock_error)?
+            .retain(|source| source.root.id != id);
         *self.0.cache.lock().map_err(lock_error)? = Cache::default();
         Ok(())
     }
 
     fn root_path(&self, id: u32) -> Result<PathBuf, String> {
-        self.0.sources.lock().map_err(lock_error)?.iter()
+        self.0
+            .sources
+            .lock()
+            .map_err(lock_error)?
+            .iter()
             .find(|source| source.root.id == id)
             .map(|source| source.path.clone())
             .ok_or_else(|| "This folder is no longer in the library.".into())
@@ -236,10 +261,16 @@ impl Library {
     pub fn list(&self, id: u32, parts: &[String]) -> Result<Listing, String> {
         let path = resolve(&self.root_path(id)?, parts)?;
         let entries = fs::read_dir(path).map_err(|_| "Cannot read this folder.")?;
-        let mut listing = Listing { folders: Vec::new(), photos: Vec::new(), skipped: 0 };
+        let mut listing = Listing {
+            folders: Vec::new(),
+            photos: Vec::new(),
+            skipped: 0,
+        };
         for (index, entry) in entries.enumerate() {
             if index >= MAX_ENTRIES {
-                return Err("This folder contains more than 25,000 entries. Open a smaller folder.".into());
+                return Err(
+                    "This folder contains more than 25,000 entries. Open a smaller folder.".into(),
+                );
             }
             let Ok(entry) = entry else {
                 listing.skipped += 1;
@@ -270,12 +301,24 @@ impl Library {
             if metadata.is_dir() {
                 listing.folders.push(name);
             } else if metadata.is_file() {
-                let modified = metadata.modified().ok().and_then(|time| time.duration_since(UNIX_EPOCH).ok()).map_or(0, |duration| duration.as_secs());
-                listing.photos.push(Photo { name, bytes: metadata.len(), modified });
+                let modified = metadata
+                    .modified()
+                    .ok()
+                    .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                    .map_or(0, |duration| duration.as_secs());
+                listing.photos.push(Photo {
+                    name,
+                    bytes: metadata.len(),
+                    modified,
+                });
             }
         }
-        listing.folders.sort_by_cached_key(|name| name.to_lowercase());
-        listing.photos.sort_by_cached_key(|photo| photo.name.to_lowercase());
+        listing
+            .folders
+            .sort_by_cached_key(|name| name.to_lowercase());
+        listing
+            .photos
+            .sort_by_cached_key(|photo| photo.name.to_lowercase());
         Ok(listing)
     }
 
@@ -283,17 +326,31 @@ impl Library {
         let path = resolve(&self.root_path(id)?, parts)?;
         let unavailable = || "Picture unavailable.".to_string();
         let metadata = fs::symlink_metadata(&path).map_err(|_| unavailable())?;
-        if !metadata.is_file() || is_link(&metadata) || !allowed_photo(&path) || metadata.len() > MAX_FILE_BYTES {
+        if !metadata.is_file()
+            || is_link(&metadata)
+            || !allowed_photo(&path)
+            || metadata.len() > MAX_FILE_BYTES
+        {
             return Err(unavailable());
         }
-        let key = metadata.modified().ok().map(|modified| CacheKey { path: path.clone(), modified, bytes: metadata.len() });
+        let key = metadata.modified().ok().map(|modified| CacheKey {
+            path: path.clone(),
+            modified,
+            bytes: metadata.len(),
+        });
         if let Some(key) = &key {
             if let Some(data) = self.0.cache.lock().map_err(lock_error)?.get(key) {
                 return Ok(data);
             }
         }
-        let mut reader = ImageReader::open(&path).map_err(|_| unavailable())?.with_guessed_format().map_err(|_| unavailable())?;
-        if !matches!(reader.format(), Some(ImageFormat::Jpeg | ImageFormat::Png | ImageFormat::WebP)) {
+        let mut reader = ImageReader::open(&path)
+            .map_err(|_| unavailable())?
+            .with_guessed_format()
+            .map_err(|_| unavailable())?;
+        if !matches!(
+            reader.format(),
+            Some(ImageFormat::Jpeg | ImageFormat::Png | ImageFormat::WebP)
+        ) {
             return Err(unavailable());
         }
         let mut limits = Limits::default();
@@ -303,19 +360,31 @@ impl Library {
         reader.limits(limits);
         let mut decoder = reader.into_decoder().map_err(|_| unavailable())?;
         let (width, height) = decoder.dimensions();
-        if u64::from(width) * u64::from(height) > MAX_PIXELS || decoder.total_bytes() > MAX_DECODE_BYTES {
+        if u64::from(width) * u64::from(height) > MAX_PIXELS
+            || decoder.total_bytes() > MAX_DECODE_BYTES
+        {
             return Err("Picture is too large to preview.".into());
         }
         let orientation = decoder.orientation().map_err(|_| unavailable())?;
         let mut image = DynamicImage::from_decoder(decoder).map_err(|_| unavailable())?;
         image.apply_orientation(orientation);
-        let preview = if image.width() > 320 || image.height() > 320 { image.thumbnail(320, 320) } else { image };
+        let preview = if image.width() > 320 || image.height() > 320 {
+            image.thumbnail(320, 320)
+        } else {
+            image
+        };
         let mut output = Cursor::new(Vec::new());
-        preview.write_to(&mut output, ImageFormat::Png).map_err(|_| unavailable())?;
+        preview
+            .write_to(&mut output, ImageFormat::Png)
+            .map_err(|_| unavailable())?;
         let bytes = output.into_inner();
         if let Some(key) = key {
             if self.root_path(id).is_ok() {
-                self.0.cache.lock().map_err(lock_error)?.insert(key, bytes.clone());
+                self.0
+                    .cache
+                    .lock()
+                    .map_err(lock_error)?
+                    .insert(key, bytes.clone());
             }
         }
         Ok(bytes)
@@ -328,7 +397,17 @@ mod tests {
 
     #[test]
     fn rejects_path_escape_components() {
-        for name in ["", ".", "..", "../outside", "a/b", "a\\b", "C:drive", "photo.jpg:stream", "\0"] {
+        for name in [
+            "",
+            ".",
+            "..",
+            "../outside",
+            "a/b",
+            "a\\b",
+            "C:drive",
+            "photo.jpg:stream",
+            "\0",
+        ] {
             assert!(!valid_component(name), "{name:?}");
         }
         assert!(valid_component("Summer coast.jpg"));
@@ -339,26 +418,55 @@ mod tests {
     fn cache_is_bounded_and_refreshes_entries() {
         let mut cache = Cache::default();
         for index in 0..100 {
-            cache.insert(CacheKey { path: PathBuf::from(index.to_string()), modified: UNIX_EPOCH, bytes: 1 }, vec![1; 300_000]);
+            cache.insert(
+                CacheKey {
+                    path: PathBuf::from(index.to_string()),
+                    modified: UNIX_EPOCH,
+                    bytes: 1,
+                },
+                vec![1; 300_000],
+            );
         }
         assert!(cache.items.len() <= CACHE_ENTRIES);
         assert!(cache.bytes <= CACHE_BYTES);
-        let key = CacheKey { path: PathBuf::from("99"), modified: UNIX_EPOCH, bytes: 1 };
+        let key = CacheKey {
+            path: PathBuf::from("99"),
+            modified: UNIX_EPOCH,
+            bytes: 1,
+        };
         assert_eq!(cache.get(&key).map(|bytes| bytes.len()), Some(300_000));
         cache.insert(key, vec![2]);
-        assert_eq!(cache.bytes, cache.items.iter().map(|(_, bytes)| bytes.len()).sum::<usize>());
+        assert_eq!(
+            cache.bytes,
+            cache
+                .items
+                .iter()
+                .map(|(_, bytes)| bytes.len())
+                .sum::<usize>()
+        );
     }
 
     #[test]
     fn reads_selected_folder_only_and_creates_thumbnail() {
-        let dir = std::env::temp_dir().join(format!("aerogallery-test-{}-{}", std::process::id(), SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));
+        let dir = std::env::temp_dir().join(format!(
+            "aerogallery-test-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
         fs::create_dir_all(dir.join("nested")).unwrap();
         struct Cleanup(PathBuf);
         impl Drop for Cleanup {
-            fn drop(&mut self) { let _ = fs::remove_dir_all(&self.0); }
+            fn drop(&mut self) {
+                let _ = fs::remove_dir_all(&self.0);
+            }
         }
         let _cleanup = Cleanup(dir.clone());
-        DynamicImage::new_rgb8(640, 480).save(dir.join("photo.png")).unwrap();
+        DynamicImage::new_rgb8(640, 480)
+            .save(dir.join("photo.png"))
+            .unwrap();
         fs::write(dir.join("notes.txt"), b"not a photo").unwrap();
         let library = Library::default();
         let root = library.add(dir).unwrap();

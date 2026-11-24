@@ -12,7 +12,12 @@ async fn pick_folder(app: AppHandle, state: State<'_, Library>) -> Result<Option
     let permit = library.picker_permit()?;
     tauri::async_runtime::spawn_blocking(move || {
         let _permit = permit;
-        let Some(folder) = app.dialog().file().set_title("Select a picture folder").blocking_pick_folder() else {
+        let Some(folder) = app
+            .dialog()
+            .file()
+            .set_title("Select a picture folder")
+            .blocking_pick_folder()
+        else {
             return Ok(None);
         };
         let path = folder.into_path().map_err(|_| "Choose a local folder.")?;
@@ -28,7 +33,11 @@ fn list_roots(state: State<'_, Library>) -> Result<Vec<Root>, String> {
 }
 
 #[tauri::command]
-async fn read_folder(root_id: u32, parts: Vec<String>, state: State<'_, Library>) -> Result<Listing, String> {
+async fn read_folder(
+    root_id: u32,
+    parts: Vec<String>,
+    state: State<'_, Library>,
+) -> Result<Listing, String> {
     let library = state.inner().clone();
     let permit = library.listing_permit()?;
     tauri::async_runtime::spawn_blocking(move || {
@@ -45,7 +54,11 @@ fn remove_root(root_id: u32, state: State<'_, Library>) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn thumbnail(root_id: u32, parts: Vec<String>, state: State<'_, Library>) -> Result<Response, String> {
+async fn thumbnail(
+    root_id: u32,
+    parts: Vec<String>,
+    state: State<'_, Library>,
+) -> Result<Response, String> {
     let library = state.inner().clone();
     let permit = library.decode_permit()?;
     tauri::async_runtime::spawn_blocking(move || {
@@ -60,7 +73,13 @@ fn main() {
     tauri::Builder::default()
         .manage(Library::default())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![pick_folder, list_roots, read_folder, remove_root, thumbnail])
+        .invoke_handler(tauri::generate_handler![
+            pick_folder,
+            list_roots,
+            read_folder,
+            remove_root,
+            thumbnail
+        ])
         .run(tauri::generate_context!())
         .expect("failed to start AeroGallery");
 }
