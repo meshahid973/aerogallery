@@ -57,7 +57,7 @@ export function FolderTree({ roots, ...props }: TreeProps) {
   function navigate(event: KeyboardEvent<HTMLElement>) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const target = event.target as HTMLElement;
-    if (!target.classList.contains(styles.treeItem)) return;
+    if (!target.matches(`button.${styles.treeItem}`)) return;
     const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>(`button.${styles.treeItem}:not(:disabled)`));
     const index = items.indexOf(target as HTMLButtonElement);
     if (index < 0) return;
