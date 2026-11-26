@@ -33,7 +33,7 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   );
 });
 
-export function VirtualGrid({ folder, photos, selected, size, previewRevision, onSelect, onOpen, error, busy }: {
+export function VirtualGrid({ folder, photos, selected, size, previewRevision, onSelect, onOpen, busy }: {
   folder: Folder;
   photos: Photo[];
   selected: string | null;
@@ -41,7 +41,6 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
   previewRevision: number;
   onSelect: (name: string) => void;
   onOpen: (name: string) => void;
-  error: string;
   busy: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
@@ -50,8 +49,8 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
   const [metrics, setMetrics] = useState({ width: 0, height: 0, top: 0 });
   const preferred = TILE_WIDTHS[size] ?? TILE_WIDTHS[1];
   const columns = Math.max(1, Math.floor((metrics.width + GAP) / (preferred + GAP)));
-  const tile = metrics.width > 0 ? Math.floor((metrics.width - GAP * (columns - 1)) / columns) : preferred;
-  const rowHeight = Math.ceil((tile - 12) * 0.75) + 33;
+  const tile = metrics.width > 0 ? Math.max(1, Math.floor((metrics.width - GAP * (columns - 1)) / columns)) : preferred;
+  const rowHeight = Math.ceil(Math.max(0, tile - 12) * 0.75) + 33;
   const stride = rowHeight + GAP;
   const rows = Math.ceil(photos.length / columns);
   const start = Math.min(Math.max(0, rows - 1), Math.max(0, Math.floor(metrics.top / stride) - OVERSCAN));
@@ -137,7 +136,6 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
 
   return (
     <div ref={viewport} className={styles.content} onScroll={onScroll} aria-busy={busy}>
-      {error && <p role="alert" className={styles.error}>{error}</p>}
       <ul className={styles.virtualGrid} style={{
         gridTemplateColumns: `repeat(${columns}, ${tile}px)`,
         gridAutoRows: `${rowHeight}px`,

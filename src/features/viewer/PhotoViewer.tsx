@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { AeroButton, AeroIconButton, AeroSelect, AeroToolbar } from '../../components/aero/controls';
 import { CaptionBar, customChrome } from '../../components/aero/CaptionBar';
@@ -39,7 +39,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
   const ownsFullscreen = useRef(false);
   const windowPending = useRef(false);
   const mounted = useRef(false);
-  const index = photos.findIndex((photo) => photo.name === name);
+  const index = useMemo(() => photos.findIndex((photo) => photo.name === name), [photos, name]);
   const photo = photos[index];
   const next = photos[index + 1] ?? (photos.length > 1 ? photos[0] : undefined);
   const previous = photos[index - 1];

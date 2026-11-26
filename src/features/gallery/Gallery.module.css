@@ -80,14 +80,14 @@
   padding: 16px;
   text-align: center;
 }
-.error { padding: 8px 10px; color: var(--error); background: #fff1ed; border: 1px solid #d7a09a; border-radius: var(--radius-control); overflow-wrap: anywhere; }
+.error { flex: 0 0 auto; max-height: 96px; overflow: auto; padding: 8px 10px; color: var(--error); background: #fff1ed; border: 1px solid #d7a09a; border-radius: var(--radius-control); overflow-wrap: anywhere; }
 .virtualGrid {
   display: grid;
   flex: 0 0 auto;
   align-content: start;
   gap: 8px;
 }
-.photoCell { min-width: 0; }
+.photoCell { min-width: 0; contain: layout; }
 .photo {
   width: 100%;
   min-width: 0;
@@ -128,7 +128,6 @@
   .chevron { border-color: ButtonText; }
 }
 
-.photoCell { contain: layout; }
 .imageFrame[data-placeholder="true"] { background: var(--photo-surface); }
 .photo:focus-visible { outline-offset: -2px; }
 .previewError { font-size: 11px; line-height: 1.2; color: var(--error); padding: 3px 5px; text-align: center; }

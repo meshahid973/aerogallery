@@ -21,18 +21,22 @@ export function useGallery() {
   const [error, setError] = useState('');
   const pending = useRef(false);
 
-  const apply = useCallback((folder: Folder, result: Listing) => {
+  const apply = useCallback((folder: Folder, result: Listing, reveal = false) => {
     const key = folderKey(folder);
     const ancestors = folder.parts.map((_, index) => folderKey({ ...folder, parts: folder.parts.slice(0, index) }));
     const protectedKeys = new Set([...ancestors, key]);
     setTree((previous) => {
+      const oldChildren = previous.cache.get(key);
+      const sameChildren = oldChildren !== undefined && oldChildren.length === result.folders.length && oldChildren.every((name, index) => name === result.folders[index]);
+      if (!reveal && sameChildren) return previous;
       const cache = new Map(previous.cache);
       cache.delete(key);
       cache.set(key, result.folders);
+      const childNames = new Set(result.folders);
       const valid = (candidate: string) => {
         if (candidate === key || !candidate.startsWith(key.slice(0, -1) + ',')) return true;
         const parts = JSON.parse(candidate) as (number | string)[];
-        return result.folders.includes(String(parts[folder.parts.length + 1]));
+        return childNames.has(String(parts[folder.parts.length + 1]));
       };
       for (const candidate of cache.keys()) if (!valid(candidate)) cache.delete(candidate);
       let count = [...cache.values()].reduce((total, children) => total + children.length, 0);
@@ -43,7 +47,7 @@ export function useGallery() {
           count -= children.length;
         }
       }
-      const expanded = new Set([...previous.expanded, ...protectedKeys].filter((candidate) => cache.has(candidate)));
+      const expanded = new Set([...previous.expanded, ...(reveal ? protectedKeys : [])].filter((candidate) => cache.has(candidate)));
       return { cache, expanded };
     });
     activeRevision.current = result.revision;
@@ -52,7 +56,8 @@ export function useGallery() {
 
   const load = useCallback(async (folder: Folder, refresh = false, record = true) => {
     const key = folderKey(folder);
-    if (activeKey.current !== key) {
+    const changedFolder = activeKey.current !== key;
+    if (changedFolder) {
       activeKey.current = key;
       activeRevision.current = null;
       setActive(folder);
@@ -64,7 +69,7 @@ export function useGallery() {
       setCanBack(true);
     }
     lastLoaded.current = folder;
-    apply(folder, result);
+    apply(folder, result, changedFolder);
   }, [apply]);
 
   const execute = useCallback(async (action: () => Promise<void>) => {
@@ -105,7 +110,7 @@ export function useGallery() {
     let running = false;
     const key = folderKey(active);
     async function check() {
-      if (stopped || running || pending.current || activeKey.current !== key || !active) return;
+      if (stopped || running || pending.current || document.hidden || activeKey.current !== key || !active) return;
       running = true;
       const epoch = actionEpoch.current;
       try {
@@ -124,15 +129,19 @@ export function useGallery() {
       } finally { running = false; }
     }
     const interval = window.setInterval(() => { void check(); }, 2500);
-    return () => { stopped = true; window.clearInterval(interval); };
+    const onVisibility = () => { if (!document.hidden) void check(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { stopped = true; window.clearInterval(interval); document.removeEventListener('visibilitychange', onVisibility); };
   }, [active, apply]);
 
   const select = (folder: Folder) => execute(() => load(folder));
   const refresh = () => execute(async () => { if (active) await load(active, true); });
   const back = () => execute(async () => {
-    const previous = history.current.pop();
+    const previous = history.current.at(-1);
+    if (!previous) return;
+    await load(previous, false, false);
+    history.current.pop();
     setCanBack(history.current.length > 0);
-    if (previous) await load(previous, false, false);
   });
 
   const add = () => execute(async () => {

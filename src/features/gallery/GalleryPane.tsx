@@ -45,7 +45,7 @@ export function GalleryPane({ folder, listing, busy, error, query, sort, size, p
     });
     return result;
   }, [listing, query, sort]);
-  const selectedPhoto = photos.find((photo) => photo.name === selected);
+  const selectedPhoto = useMemo(() => photos.find((photo) => photo.name === selected), [photos, selected]);
   const [metadata, setMetadata] = useState<PhotoMetadata | null>(null);
   const photoName = selectedPhoto?.name;
   const stamp = selectedPhoto?.stamp;
@@ -64,8 +64,8 @@ export function GalleryPane({ folder, listing, busy, error, query, sort, size, p
 
   return (
     <main className={styles.gallery} aria-label="Pictures">
-      {folder && photos.length > 0 ? <VirtualGrid key={JSON.stringify([query, sort])} previewRevision={previewRevision} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} onOpen={open} error={error} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
-        {error && <p role="alert" className={styles.error}>{error}</p>}
+      {error && <p role="alert" className={styles.error}>{error}</p>}
+      {folder && photos.length > 0 ? <VirtualGrid previewRevision={previewRevision} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} onOpen={open} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
         {empty && (
           <div className={styles.empty}>
             {!folder && isDesktop ? <img className={styles.welcomePhoto} src="/appearance/nature.jpg" alt="" draggable={false} /> : <AeroIcon name={folder ? 'folder' : 'picture'} size={48} />}

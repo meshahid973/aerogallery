@@ -41,7 +41,6 @@
 .aero-button--toolbar:not(:disabled):hover { background: var(--selection-gradient); border-color: var(--selection-edge); }
 .aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: var(--focus); }
 .aero-button:not(:disabled):active, .aero-button[aria-pressed="true"]:not(:disabled) { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
-.aero-button:focus-visible, .aero-select:focus-visible, .aero-input:focus-visible { outline-offset: 2px; }
 .aero-button:disabled, .aero-select:disabled { background: var(--photo-surface); border-color: var(--line); color: var(--text-muted); box-shadow: none; }
 .aero-button--toolbar:disabled { background: transparent; border-color: transparent; }
 .aero-button:disabled img { opacity: .45; }

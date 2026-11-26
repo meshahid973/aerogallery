@@ -52,6 +52,5 @@
 }
 @media (forced-colors: active) {
   .heading, .controls, .surface, .viewer[data-fullscreen="true"] .surface { background: Canvas; color: CanvasText; }
+  .playback .play, .playback .play:not(:disabled):hover { background: ButtonFace; border-color: ButtonText; box-shadow: none; }
 }
-
-@media (forced-colors: active) { .playback .play, .playback .play:not(:disabled):hover { background: ButtonFace; border-color: ButtonText; box-shadow: none; } }

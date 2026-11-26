@@ -26,9 +26,8 @@
   min-width: 0;
   min-height: var(--control-height);
   overflow: auto hidden;
-  padding-inline: 4px;
+  padding-inline: 9px 4px;
   border-left: 1px solid var(--line);
-  padding-left: 9px;
   scrollbar-width: none;
 }
 .crumb { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; flex-shrink: 0; }
@@ -89,8 +88,10 @@
 .themeSample::before { content: ''; grid-column: 1 / -1; background: var(--caption-glass), rgb(var(--glass-tint)); box-shadow: var(--edge-light); }
 .themeSample > span { background: linear-gradient(hsl(var(--hue) 45% 94% / .88), hsl(var(--hue) 42% 80% / .94)), url('/appearance/grass.png') center / 65px auto; }
 .themeSample > i { margin: 3px; border-radius: 2px; background: linear-gradient(hsl(var(--hue) 45% 90% / .08), hsl(var(--hue) 55% 65% / .16)), url('/appearance/nature.jpg') center / cover, var(--selection-gradient); box-shadow: var(--edge-light); }
-@media (forced-colors: active) { .themeChoice[aria-pressed="true"] { outline: 2px solid Highlight; } }
 
 .densityLabel { margin-right: auto; }
 @media (max-width: 790px) { .appearance { top: calc(var(--caption-height) + 78px); } }
-@media (forced-colors: active) { .appearance { background: Canvas; border-color: ButtonText; } }
+@media (forced-colors: active) {
+  .appearance { background: Canvas; border-color: ButtonText; }
+  .themeChoice[aria-pressed="true"] { outline: 2px solid Highlight; }
+}

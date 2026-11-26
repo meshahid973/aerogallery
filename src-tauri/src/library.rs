@@ -47,6 +47,7 @@ struct Inner {
 
 enum Work {
     Refresh,
+    Folder(u32, Vec<String>),
     Event(Event),
 }
 
@@ -200,11 +201,8 @@ impl Library {
             .collect())
     }
 
-    fn wake(&self) {
-        if matches!(
-            self.0.wake.try_send(Work::Refresh),
-            Err(TrySendError::Full(_))
-        ) {
+    fn schedule(&self, work: Work) {
+        if matches!(self.0.wake.try_send(work), Err(TrySendError::Full(_))) {
             self.0.overflow.store(true, Ordering::Release);
         }
     }
@@ -220,7 +218,7 @@ impl Library {
             |name| name.to_string_lossy().into_owned(),
         );
         let root = self.0.index.add(&path, name)?;
-        self.wake();
+        self.schedule(Work::Folder(root.id, Vec::new()));
         Ok(root)
     }
 
@@ -237,7 +235,6 @@ impl Library {
                 eprintln!("Cache removal: {error}");
             }
         }
-        self.wake();
         Ok(())
     }
 
@@ -293,7 +290,7 @@ impl Library {
             }
         }
         self.scan_one(id, parts)?;
-        self.wake();
+        self.schedule(Work::Folder(id, parts.to_vec()));
         self.0
             .index
             .list(id, &relative)?
@@ -554,6 +551,9 @@ fn worker(weak: Weak<Inner>, receiver: Receiver<Work>) {
         for message in events.drain(..) {
             match message {
                 Work::Refresh => full = true,
+                Work::Folder(id, parts) => {
+                    dirty.insert((id, parts));
+                }
                 Work::Event(event) => {
                     if event.paths.is_empty() {
                         full = true;
