@@ -3,7 +3,7 @@ import { AeroIcon } from './Icon';
 import type { IconName } from './Icon';
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'standard' | 'accent' | 'toolbar';
+  variant?: 'standard' | 'accent' | 'toolbar' | 'orb';
 };
 
 export function AeroButton({ variant = 'standard', className = '', type = 'button', ...props }: ButtonProps) {

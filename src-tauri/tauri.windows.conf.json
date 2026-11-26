@@ -15,11 +15,6 @@
         "theme": "Light",
         "transparent": true,
         "backgroundColor": "#00000000",
-        "windowEffects": {
-          "effects": [
-            "acrylic"
-          ]
-        },
         "shadow": true
       }
     ]

@@ -193,7 +193,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
         {error && <div className={styles.message} role="alert"><span>{error}</span>{photo && <AeroButton onClick={() => { setLoaded(''); setFailed(''); setRetry((value) => value + 1); }}>Retry</AeroButton>}</div>}
         {windowError && <div className={styles.notice} role="alert">{windowError}</div>}
       </div>
-      <AeroToolbar className={styles.controls} aria-label="Photo controls">
+      <AeroToolbar className={styles.controls} data-tone="footer" aria-label="Photo controls">
         <div className={styles.group}>
           <AeroButton className={styles.glyph} aria-label="Zoom out (-)" title="Zoom out (-)" disabled={!ready} onClick={() => stage.current?.zoom(0.8)}>−</AeroButton>
           <AeroButton className={styles.glyph} aria-label="Zoom in (+)" title="Zoom in (+)" disabled={!ready} onClick={() => stage.current?.zoom(1.25)}>+</AeroButton>
@@ -203,7 +203,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
         </div>
         <div className={styles.playback}>
           <AeroIconButton icon="back" label="Previous picture (Left)" disabled={index <= 0} onClick={() => move(-1)} />
-          <AeroButton className={styles.play} aria-label={playing ? 'Pause slideshow (Space)' : 'Play slideshow (Space)'} title={playing ? 'Pause slideshow (Space)' : 'Play slideshow (Space)'} aria-pressed={playing} disabled={photos.length < 2 || !!error} onClick={togglePlay}>
+          <AeroButton variant="orb" className={styles.play} aria-label={playing ? 'Pause slideshow (Space)' : 'Play slideshow (Space)'} title={playing ? 'Pause slideshow (Space)' : 'Play slideshow (Space)'} aria-pressed={playing} disabled={photos.length < 2 || !!error} onClick={togglePlay}>
             <AeroIcon name={playing ? 'pause' : 'play'} size={24} />
           </AeroButton>
           <AeroIconButton icon="forward" label="Next picture (Right)" disabled={index < 0 || index >= photos.length - 1} onClick={() => move(1)} />

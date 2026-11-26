@@ -13,6 +13,7 @@ fn main() {
             "chrome_regions",
             "native_system_menu",
             "sync_taskbar",
+            "apply_material",
             "take_shell_items",
             "release_external",
             "external_image",

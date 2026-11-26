@@ -3,9 +3,8 @@ import type { KeyboardEvent } from 'react';
 import { AeroButton, AeroIconButton, AeroInput, AeroSelect, AeroToolbar } from './components/aero/controls';
 import { AeroIcon } from './components/aero/Icon';
 import { CaptionBar } from './components/aero/CaptionBar';
-import { glassDensities, readDensity, saveDensity, themes, themeNames, readTheme, saveTheme } from './lib/appearance';
-import type { GlassDensity, Theme } from './lib/appearance';
-import { defaultApps, folderKey, isDesktop, isWindows } from './lib/desktop';
+import { AppearancePanel } from './components/aero/AppearancePanel';
+import { folderKey, isDesktop } from './lib/desktop';
 import { FolderTree } from './features/gallery/FolderTree';
 import { GalleryPane } from './features/gallery/GalleryPane';
 import type { SortOrder } from './features/gallery/GalleryPane';
@@ -14,17 +13,12 @@ import { useNativeChrome } from './lib/chrome';
 import { useShell } from './features/gallery/useShell';
 import styles from './App.module.css';
 
-const nativeGlass = isDesktop && /Windows/i.test(navigator.userAgent);
-
 export default function App() {
   useNativeChrome();
-  const [theme, setTheme] = useState<Theme>(readTheme);
-  const [density, setDensity] = useState<GlassDensity>(readDensity);
   const [sort, setSort] = useState<SortOrder>('name');
   const [size, setSize] = useState(1);
   const [previewRevision, setPreviewRevision] = useState(0);
   const shell = useRef<HTMLDivElement>(null);
-  const [preferenceError, setPreferenceError] = useState('');
   const [search, setSearch] = useState({ folder: '', value: '' });
   const deferredSearch = useDeferredValue(search);
   const gallery = useGallery();
@@ -38,13 +32,6 @@ export default function App() {
     { name: root.name, parts: [] as string[] },
     ...active.parts.map((name, index) => ({ name, parts: active.parts.slice(0, index + 1) })),
   ] : [];
-
-  function changeDensity(value: string) {
-    const next = glassDensities.find((item) => item === value);
-    if (!next) return;
-    setDensity(next);
-    setPreferenceError(saveDensity(next) ? '' : 'Appearance could not be saved.');
-  }
 
   function refresh() {
     if (!active || busy) return;
@@ -73,7 +60,7 @@ export default function App() {
   }
 
   return (
-    <div ref={shell} onKeyDown={shortcuts} className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass} data-dragging={incoming.dragging}>
+    <div ref={shell} onKeyDown={shortcuts} className={styles.shell} data-native-glass="false" data-dragging={incoming.dragging}>
       <CaptionBar />
       <AeroToolbar className={styles.commands} data-tone="glass" aria-label="Library commands">
         <div className={styles.actions}>
@@ -94,7 +81,7 @@ export default function App() {
             </span>
           )) : <span>Pictures</span>}
         </nav>
-        <div className={styles.search}>
+        <div className={`${styles.search} aero-recessed`}>
           <AeroIcon name="search" size={16} />
           <AeroInput type="search" aria-label="Search pictures" placeholder="Search pictures" title="Search pictures (Ctrl+F)" value={query} disabled={!listing || busy} onChange={(event) => setSearch({ folder: key, value: event.currentTarget.value })} />
         </div>
@@ -108,22 +95,7 @@ export default function App() {
         </AeroSelect>
         <AeroIconButton variant="toolbar" icon="appearance" label="Appearance" popoverTarget="appearance-panel" />
       </AeroToolbar>
-      <div id="appearance-panel" popover="auto" className={styles.appearance} aria-label="Appearance">
-        <div className={styles.themeChoices} role="group" aria-label="Theme">
-          {themes.map((choice) => <button type="button" className={styles.themeChoice} key={choice} aria-pressed={theme === choice} onClick={() => { setTheme(choice); setPreferenceError(saveTheme(choice) ? '' : 'Appearance could not be saved.'); }}>
-            <span className={styles.themeSample} data-theme={choice} aria-hidden="true"><span /><i /></span>
-            {themeNames[choice]}
-          </button>)}
-        </div>
-        <label className={styles.densityLabel} htmlFor="glass-density">Glass density</label>
-        <AeroSelect id="glass-density" value={density} onChange={(event) => changeDensity(event.currentTarget.value)}>
-          <option value="clear">Clear</option>
-          <option value="balanced">Balanced</option>
-          <option value="solid">Solid</option>
-        </AeroSelect>
-        {isWindows && <AeroButton onClick={() => void defaultApps().catch((failure) => setPreferenceError(String(failure)))}>Windows Default Apps</AeroButton>}
-        {preferenceError && <p role="status" className={styles.preferenceError}>{preferenceError}</p>}
-      </div>
+      <AppearancePanel shell={shell} />
       <div className={styles.workspace}>
         <FolderTree roots={roots} active={active} cache={gallery.cache} expanded={gallery.expanded} busy={busy} onSelect={(folder) => void gallery.select(folder)} onToggle={gallery.toggle} />
         <GalleryPane key={JSON.stringify([key, galleryQuery, sort])} external={incoming.external} onCloseExternal={incoming.close} shellError={incoming.error} onDismissShellError={() => incoming.setError('')} folder={active} listing={listing} busy={busy} error={gallery.error} query={galleryQuery} sort={sort} size={size} previewRevision={previewRevision} onSize={setSize} onAdd={() => void gallery.add()} />

@@ -4,7 +4,9 @@
   font-size: 13px;
   --error: #8e2222;
   --white: #fff;
-  --glass-density: .78;
+  --glass-effective-opacity: 1;
+  --glass-reflection: var(--reflection-strength, 1);
+  --glass-tint: var(--appearance-tint, var(--theme-glass-tint));
   --control-height: 28px;
   --caption-height: 36px;
   --space-1: 4px;
@@ -16,7 +18,7 @@
 :root, [data-theme] {
   --hue: 201;
   --saturation: 48%;
-  --glass-tint: 178, 223, 247;
+  --theme-glass-tint: 178, 223, 247;
   --radius-control: 4px;
   --accent-start: #efffda;
   --accent-light: #c9eb9c;
@@ -32,8 +34,8 @@
   --sidebar: linear-gradient(155deg, hsl(var(--hue) 61% 98%) 4%, hsl(var(--hue) 49% 94%) 53%, hsl(var(--hue) 37% 92%));
   --photo-surface: hsl(var(--hue) 30% 95%);
   --viewer-surface: hsl(var(--hue) 12% 94%);
-  --caption-glass: linear-gradient(112deg, #ffffff75, transparent 42%, #ffffff25 78%), linear-gradient(180deg, #ffffffb0, #ffffff08 77%, hsl(var(--hue) 50% 42% / .12));
-  --command-glass: linear-gradient(180deg, #ffffff9c, hsl(var(--hue) 46% 95% / .70) 43%, hsl(var(--hue) 53% 84% / .85));
+  --caption-glass: linear-gradient(112deg, rgb(255 255 255 / clamp(0, calc(0.459 * var(--glass-reflection)), 1)), transparent 42%, rgb(255 255 255 / clamp(0, calc(0.145 * var(--glass-reflection)), 1)) 78%), linear-gradient(180deg, rgb(255 255 255 / clamp(0, calc(0.690 * var(--glass-reflection)), 1)), rgb(255 255 255 / clamp(0, calc(0.031 * var(--glass-reflection)), 1)) 77%, hsl(var(--hue) 50% 42% / calc(.12 * var(--glass-reflection))));
+  --command-glass: linear-gradient(180deg, rgb(255 255 255 / clamp(0, calc(0.612 * var(--glass-reflection)), 1)), hsl(var(--hue) 46% 95% / calc(.70 * var(--glass-reflection))) 43%, hsl(var(--hue) 53% 84% / calc(.85 * var(--glass-reflection))));
   --footer-material: linear-gradient(#fff, hsl(var(--hue) 35% 96%) 48%, hsl(var(--hue) 34% 88%));
   --selection-edge: hsl(var(--hue) 54% 63%);
   --photo-edge: hsl(var(--hue) 15% 73%);
@@ -59,9 +61,9 @@
 [data-theme="aqua"] {
   --hue: 179;
   --saturation: 67%;
-  --glass-tint: 146, 232, 223;
-  --caption-glass: linear-gradient(105deg, #ffffffb0, transparent 45%, #ffffff5c), linear-gradient(#ffffffbc, #a9f4df24 55%, #36b8ad35);
-  --command-glass: linear-gradient(#fafffff0, #bcece3b0 53%, #e2fff6db);
+  --theme-glass-tint: 146, 232, 223;
+  --caption-glass: linear-gradient(105deg, rgb(255 255 255 / clamp(0, calc(0.690 * var(--glass-reflection)), 1)), transparent 45%, rgb(255 255 255 / clamp(0, calc(0.361 * var(--glass-reflection)), 1))), linear-gradient(rgb(255 255 255 / clamp(0, calc(0.737 * var(--glass-reflection)), 1)), rgb(169 244 223 / clamp(0, calc(0.141 * var(--glass-reflection)), 1)) 55%, rgb(54 184 173 / clamp(0, calc(0.208 * var(--glass-reflection)), 1)));
+  --command-glass: linear-gradient(rgb(250 255 255 / clamp(0, calc(0.941 * var(--glass-reflection)), 1)), rgb(188 236 227 / clamp(0, calc(0.690 * var(--glass-reflection)), 1)) 53%, rgb(226 255 246 / clamp(0, calc(0.859 * var(--glass-reflection)), 1)));
   --radius-control: 11px;
   --silver-gradient: linear-gradient(#fff, #dcf8f4 25%, #a6dcd7 50%, #e8fffb 85%, #b5e5dc);
   --blue-gradient: linear-gradient(#fff, #9af9ee 25%, #45bcb5 55%, #a3ffec 90%);
@@ -74,9 +76,9 @@
 [data-theme="aurora"] {
   --hue: 256;
   --saturation: 57%;
-  --glass-tint: 199, 180, 239;
-  --caption-glass: linear-gradient(112deg, #91f8dd88, transparent 38%, #ad86ec82), linear-gradient(#ffffffaf, #ffffff0a 80%, #7d59c135);
-  --command-glass: linear-gradient(112deg, #d9fff3a0, transparent 42%, #e8dcffa0), linear-gradient(#fffdf9d9, #e7e0f5d9);
+  --theme-glass-tint: 199, 180, 239;
+  --caption-glass: linear-gradient(112deg, rgb(145 248 221 / clamp(0, calc(0.533 * var(--glass-reflection)), 1)), transparent 38%, rgb(173 134 236 / clamp(0, calc(0.510 * var(--glass-reflection)), 1))), linear-gradient(rgb(255 255 255 / clamp(0, calc(0.686 * var(--glass-reflection)), 1)), rgb(255 255 255 / clamp(0, calc(0.039 * var(--glass-reflection)), 1)) 80%, rgb(125 89 193 / clamp(0, calc(0.208 * var(--glass-reflection)), 1)));
+  --command-glass: linear-gradient(112deg, rgb(217 255 243 / clamp(0, calc(0.627 * var(--glass-reflection)), 1)), transparent 42%, rgb(232 220 255 / clamp(0, calc(0.627 * var(--glass-reflection)), 1))), linear-gradient(rgb(255 253 249 / clamp(0, calc(0.851 * var(--glass-reflection)), 1)), rgb(231 224 245 / clamp(0, calc(0.851 * var(--glass-reflection)), 1)));
   --sidebar: linear-gradient(130deg, #f5f1ff, #e5eafa 70%, #def5ee);
   --accent-start: #f2fffa;
   --accent-light: #b7eadf;
@@ -86,9 +88,9 @@
 [data-theme="frost"] {
   --hue: 213;
   --saturation: 17%;
-  --glass-tint: 221, 231, 242;
-  --caption-glass: linear-gradient(115deg, #ffffffe0, transparent 42%, #ffffff6b), linear-gradient(#ffffffbf, #aab9ca35);
-  --command-glass: linear-gradient(#fffffff0, #e7edf4c9 60%, #d7e0ebdc);
+  --theme-glass-tint: 221, 231, 242;
+  --caption-glass: linear-gradient(115deg, rgb(255 255 255 / clamp(0, calc(0.878 * var(--glass-reflection)), 1)), transparent 42%, rgb(255 255 255 / clamp(0, calc(0.420 * var(--glass-reflection)), 1))), linear-gradient(rgb(255 255 255 / clamp(0, calc(0.749 * var(--glass-reflection)), 1)), rgb(170 185 202 / clamp(0, calc(0.208 * var(--glass-reflection)), 1)));
+  --command-glass: linear-gradient(rgb(255 255 255 / clamp(0, calc(0.941 * var(--glass-reflection)), 1)), rgb(231 237 244 / clamp(0, calc(0.788 * var(--glass-reflection)), 1)) 60%, rgb(215 224 235 / clamp(0, calc(0.863 * var(--glass-reflection)), 1)));
   --paper: #fafcfe;
   --sidebar: linear-gradient(100deg, #f7faff, #e9edf3);
   --viewer-surface: #edf0f3;
@@ -97,10 +99,10 @@
   --accent-dark: #a7c5e1;
   --accent-end: #dcecfb;
 }
-[data-glass="clear"] { --glass-density: .48; }
-[data-glass="solid"] { --glass-density: 1; }
-@media (prefers-reduced-transparency: reduce) {
-  :root, [data-glass] { --glass-density: 1; }
+[data-native-glass="true"] { --glass-effective-opacity: var(--appearance-opacity, .78); }
+[data-window-focused="false"] { --glass-reflection: calc(var(--reflection-strength, 1) * .45); }
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  :root, [data-native-glass] { --glass-effective-opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   :root { --transition-fast: 0ms; }

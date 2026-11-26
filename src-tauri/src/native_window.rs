@@ -199,6 +199,9 @@ unsafe extern "system" fn parent_proc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPAR
             };
             if let Some(action) = action { let _ = data.app.emit_to("main", "aero-taskbar", action); return 0; }
         }
+        WM_SETTINGCHANGE | WM_THEMECHANGED | WM_DWMCOMPOSITIONCHANGED => {
+            let _ = data.app.emit_to("main", "aero-material-settings", ());
+        }
         WM_DPICHANGED => {
             if let Ok(mut rect) = state.rect.lock() { *rect = None; }
         }

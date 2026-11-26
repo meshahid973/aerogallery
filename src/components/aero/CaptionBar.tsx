@@ -62,7 +62,7 @@ export function CaptionBar({ title = 'AeroGallery', fullscreen = false, leading,
 
   if (!customChrome || fullscreen) return null;
   return (
-    <div className={styles.caption} data-focused={focused} data-maximized={maximized}>
+    <div className={`${styles.caption} aero-caption-material`} data-focused={focused} data-maximized={maximized}>
       {leading && <div className={styles.tools}>{leading}</div>}
       <div className={styles.drag} data-tauri-drag-region onContextMenu={(event) => { if (isWindows) { event.preventDefault(); void showSystemMenu(true).catch(() => {}); } }}>
         {!leading && <AeroIcon name="picture" size={18} />}

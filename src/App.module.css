@@ -40,10 +40,6 @@
   align-items: center;
   min-width: 106px;
   width: clamp(106px, 17%, 200px);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--white);
-  box-shadow: var(--recessed-shadow);
   padding: 0 5px;
 }
 .search:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
@@ -74,7 +70,7 @@
   box-shadow: var(--edge-light), 0 4px 12px #143a5529;
 }
 @media (prefers-reduced-transparency: reduce) { .shell[data-native-glass="true"] { background: var(--paper); } }
-.appearance:popover-open { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 20px); width: 306px; }
+.appearance:popover-open { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 20px); width: 306px; max-height: calc(100dvh - 120px); overflow: auto; }
 .preferenceError { flex-basis: 100%; color: var(--error); }
 @media (max-width: 720px) { .workspace { grid-template-columns: 150px minmax(0, 1fr); } }
 
@@ -85,11 +81,11 @@
 .themeChoice[aria-pressed="true"] { border-color: var(--focus); background: var(--selection-gradient); }
 .themeChoice:hover { background: var(--selection-gradient); }
 .themeSample { display: grid; width: 100%; height: 62px; grid-template-columns: 1fr 2fr; grid-template-rows: 14px 1fr; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); overflow: hidden; }
-.themeSample::before { content: ''; grid-column: 1 / -1; background: var(--caption-glass), rgb(var(--glass-tint)); box-shadow: var(--edge-light); }
+.themeSample { --appearance-tint: initial; --reflection-strength: 1; }
+.themeSample::before { content: ''; grid-column: 1 / -1; background: var(--caption-glass), rgb(var(--theme-glass-tint)); box-shadow: var(--edge-light); }
 .themeSample > span { background: linear-gradient(hsl(var(--hue) 45% 94% / .88), hsl(var(--hue) 42% 80% / .94)), url('/appearance/grass.png') center / 65px auto; }
 .themeSample > i { margin: 3px; border-radius: 2px; background: linear-gradient(hsl(var(--hue) 45% 90% / .08), hsl(var(--hue) 55% 65% / .16)), url('/appearance/nature.jpg') center / cover, var(--selection-gradient); box-shadow: var(--edge-light); }
 
-.densityLabel { margin-right: auto; }
 @media (max-width: 790px) { .appearance { top: calc(var(--caption-height) + 78px); } }
 @media (forced-colors: active) {
   .appearance { background: Canvas; border-color: ButtonText; }
@@ -98,3 +94,10 @@
 
 .dropHint { position: fixed; inset: 6px; z-index: 300; border: 2px solid var(--focus); box-shadow: inset 0 0 12px #66bbff55; display: grid; place-items: center; pointer-events: none; color: var(--heading); background: #e6f6ff44; font-weight: 600; }
 .shell[data-dragging="true"] dialog[open]::after { content: 'Drop pictures or folders'; position: absolute; inset: 6px; border: 2px solid var(--focus); display: grid; place-items: center; pointer-events: none; color: var(--heading); background: #e6f6ff44; font-weight: 600; }
+
+.appearanceFields { display: grid; grid-template-columns: auto minmax(0, 1fr) 40px; align-items: center; gap: 7px 10px; width: 100%; }
+.appearanceFields input[type="range"] { width: 100%; }
+.appearanceFields input[type="color"] { width: 46px; padding: 2px; cursor: pointer; }
+.appearanceFields output { text-align: right; font-variant-numeric: tabular-nums; }
+.liveGlass { width: 100%; background: url('/appearance/nature.jpg') center 40% / cover; border: 1px solid var(--line-strong); border-radius: var(--radius-control); overflow: hidden; --glass-effective-opacity: var(--appearance-opacity, .78); }
+.liveGlass > span { display: block; min-height: 24px; padding: 4px 8px; }

@@ -5,8 +5,6 @@
   align-items: flex-start;
   padding: 0 8px 0 10px;
   gap: 7px;
-  background: var(--caption-glass), rgba(var(--glass-tint), var(--glass-density));
-  box-shadow: inset 0 1px 0 #ffffffc9;
   user-select: none;
 }
 .drag { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; height: var(--caption-height); color: var(--text); text-shadow: 0 1px 1px #ffffffd9; font-weight: 500; }
@@ -37,7 +35,6 @@
 .resize[data-edge="NorthWest"] { top: 0; left: 0; width: 7px; height: 7px; cursor: nw-resize; }
 .resize[data-edge="SouthEast"] { bottom: 0; right: 0; width: 7px; height: 7px; cursor: se-resize; }
 .resize[data-edge="SouthWest"] { bottom: 0; left: 0; width: 7px; height: 7px; cursor: sw-resize; }
-@media (prefers-reduced-transparency: reduce) { .caption { background: var(--toolbar-gradient); } }
 @media (forced-colors: active) { .caption, .buttons button, .buttons .close { background: Canvas; color: CanvasText; border-color: ButtonText; } .buttons button svg { filter: none; } }
 
 :global(html[data-native-max-hover="true"]) .buttons button[data-max-button]:not(:disabled) { background: var(--caption-hover); }
