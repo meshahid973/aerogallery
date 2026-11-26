@@ -10,6 +10,11 @@ fn main() {
             "thumbnail",
             "full_image",
             "viewer_fullscreen",
+            "take_shell_items",
+            "release_external",
+            "external_image",
+            "default_apps",
+            "set_wallpaper",
         ]),
     ))
     .expect("failed to build AeroGallery");

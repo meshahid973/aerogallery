@@ -23,6 +23,11 @@
     "core:window:allow-start-resize-dragging",
     "core:window:allow-internal-toggle-maximize",
     "core:event:allow-listen",
-    "core:event:allow-unlisten"
+    "core:event:allow-unlisten",
+    "allow-take-shell-items",
+    "allow-release-external",
+    "allow-external-image",
+    "allow-default-apps",
+    "allow-set-wallpaper"
   ]
 }

@@ -29,7 +29,7 @@ pub struct PhotoMetadata {
     pub focal_length: Option<String>,
 }
 
-fn open_checked(path: &Path) -> Result<File, String> {
+pub(crate) fn open_checked(path: &Path) -> Result<File, String> {
     let metadata = fs::symlink_metadata(path).map_err(|_| "Picture unavailable.")?;
     if !metadata.is_file()
         || is_link(&metadata)

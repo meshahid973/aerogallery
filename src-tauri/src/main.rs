@@ -5,10 +5,13 @@ mod imaging;
 mod index;
 mod library;
 mod paths;
+mod shell;
+#[cfg(windows)]
+mod windows_shell;
 
 use imaging::PhotoMetadata;
 use library::{Library, Listing, Root};
-use tauri::{ipc::Response, AppHandle, Manager, State};
+use tauri::{ipc::Response, AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
@@ -133,10 +136,36 @@ fn viewer_fullscreen(window: tauri::WebviewWindow, enabled: bool) -> Result<(), 
 
 fn main() {
     tauri::Builder::default()
+        .manage(shell::ShellInbox::default())
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            shell::enqueue(app, shell::arguments(args.into_iter().map(std::path::PathBuf::from), std::path::Path::new(&cwd)));
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        .on_webview_event(|webview, event| {
+            if webview.label() != "main" { return; }
+            if let tauri::WebviewEvent::DragDrop(event) = event {
+                match event {
+                    tauri::DragDropEvent::Enter { .. } => { let _ = webview.emit("shell-drag", true); }
+                    tauri::DragDropEvent::Leave => { let _ = webview.emit("shell-drag", false); }
+                    tauri::DragDropEvent::Drop { paths, .. } => {
+                        let _ = webview.emit("shell-drag", false);
+                        shell::enqueue(webview.app_handle(), paths.clone());
+                    }
+                    _ => {}
+                }
+            }
+        })
         .setup(|app| {
             let data = app.path().app_data_dir()?;
             let library = Library::open(&data).map_err(std::io::Error::other)?;
             app.manage(library);
+            if let Ok(cwd) = std::env::current_dir() {
+                shell::enqueue(app.handle(), shell::arguments(std::env::args_os().map(std::path::PathBuf::from), &cwd));
+            }
             Ok(())
         })
         .plugin(tauri_plugin_dialog::init())
@@ -149,7 +178,12 @@ fn main() {
             remove_root,
             thumbnail,
             full_image,
-            viewer_fullscreen
+            viewer_fullscreen,
+            shell::take_shell_items,
+            shell::release_external,
+            shell::external_image,
+            shell::default_apps,
+            shell::set_wallpaper
         ])
         .run(tauri::generate_context!())
         .expect("failed to start AeroGallery");
