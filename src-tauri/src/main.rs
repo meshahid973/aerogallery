@@ -8,6 +8,12 @@ mod paths;
 mod shell;
 #[cfg(windows)]
 mod windows_shell;
+#[cfg(windows)]
+mod native_window;
+#[cfg(windows)]
+mod taskbar;
+#[cfg(windows)]
+mod window_placement;
 
 use imaging::PhotoMetadata;
 use library::{Library, Listing, Root};
@@ -128,10 +134,27 @@ async fn full_image(
 }
 
 #[tauri::command]
-fn viewer_fullscreen(window: tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
-    window
-        .set_fullscreen(enabled)
-        .map_err(|_| "Cannot change fullscreen mode.".to_string())
+async fn viewer_fullscreen(window: tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
+    #[cfg(windows)] { native_window::fullscreen(&window, enabled) }
+    #[cfg(not(windows))] { window.set_fullscreen(enabled).map_err(|_| "Cannot change fullscreen mode.".to_string()) }
+}
+
+#[tauri::command]
+async fn chrome_regions(window: tauri::WebviewWindow, bounds: Option<[i32; 4]>) -> Result<bool, String> {
+    #[cfg(windows)] { native_window::regions(&window, bounds) }
+    #[cfg(not(windows))] { let _ = (window, bounds); Ok(false) }
+}
+
+#[tauri::command]
+async fn native_system_menu(window: tauri::WebviewWindow, cursor: bool) -> Result<(), String> {
+    #[cfg(windows)] { native_window::show_menu(&window, cursor) }
+    #[cfg(not(windows))] { let _ = (window, cursor); Ok(()) }
+}
+
+#[tauri::command]
+async fn sync_taskbar(window: tauri::WebviewWindow, active: bool, previous: bool, next: bool, can_play: bool, playing: bool) -> Result<(), String> {
+    #[cfg(windows)] { native_window::playback(&window, taskbar::Playback { active, previous, next, can_play, playing }) }
+    #[cfg(not(windows))] { let _ = (window, active, previous, next, can_play, playing); Ok(()) }
 }
 
 fn main() {
@@ -163,6 +186,12 @@ fn main() {
             let data = app.path().app_data_dir()?;
             let library = Library::open(&data).map_err(std::io::Error::other)?;
             app.manage(library);
+            #[cfg(windows)] {
+                app.manage(native_window::NativeState::default());
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Err(error) = native_window::install(&window, data.join("window-placement.json")) { eprintln!("Window integration: {error}"); }
+                }
+            }
             if let Ok(cwd) = std::env::current_dir() {
                 shell::enqueue(app.handle(), shell::arguments(std::env::args_os().map(std::path::PathBuf::from), &cwd));
             }
@@ -179,6 +208,9 @@ fn main() {
             thumbnail,
             full_image,
             viewer_fullscreen,
+            chrome_regions,
+            native_system_menu,
+            sync_taskbar,
             shell::take_shell_items,
             shell::release_external,
             shell::external_image,

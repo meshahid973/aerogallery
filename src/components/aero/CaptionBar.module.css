@@ -39,3 +39,5 @@
 .resize[data-edge="SouthWest"] { bottom: 0; left: 0; width: 7px; height: 7px; cursor: sw-resize; }
 @media (prefers-reduced-transparency: reduce) { .caption { background: var(--toolbar-gradient); } }
 @media (forced-colors: active) { .caption, .buttons button, .buttons .close { background: Canvas; color: CanvasText; border-color: ButtonText; } .buttons button svg { filter: none; } }
+
+:global(html[data-native-max-hover="true"]) .buttons button[data-max-button]:not(:disabled) { background: var(--caption-hover); }

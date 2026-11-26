@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { AeroButton, AeroIconButton, AeroSelect, AeroToolbar } from '../../components/aero/controls';
 import { CaptionBar, customChrome } from '../../components/aero/CaptionBar';
 import { PhotoActions } from '../../components/aero/PhotoActions';
 import { AeroIcon } from '../../components/aero/Icon';
 import { suspendThumbnailQueue } from '../gallery/thumbnails';
-import { setViewerFullscreen } from '../../lib/desktop';
+import { isWindows, setViewerFullscreen, syncTaskbar } from '../../lib/desktop';
 import type { Folder, Photo } from '../../lib/desktop';
 import { photoKey, useViewerAsset } from './assets';
 import { PhotoStage } from './PhotoStage';
@@ -131,6 +132,25 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
   function togglePlay() {
     if (photos.length > 1 && !error) setPlaying((value) => !value);
   }
+
+  const taskbarActions = useRef({ previous: () => move(-1), play: togglePlay, next: () => move(1) });
+  taskbarActions.current = { previous: () => move(-1), play: togglePlay, next: () => move(1) };
+  useEffect(() => {
+    if (!isWindows) return;
+    let active = true;
+    let release: (() => void) | undefined;
+    void listen<'previous' | 'play' | 'next'>('aero-taskbar', ({ payload }) => {
+      if (active) taskbarActions.current[payload]?.();
+    }).then((unlisten) => { if (active) release = unlisten; else unlisten(); }, () => {});
+    return () => {
+      active = false;
+      release?.();
+      void syncTaskbar(false, false, false, false, false);
+    };
+  }, []);
+  useEffect(() => {
+    if (isWindows) void syncTaskbar(true, index > 0, index >= 0 && index < photos.length - 1, photos.length > 1 && !error, playing);
+  }, [index, photos.length, error, playing]);
 
   function keyboard(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
