@@ -77,7 +77,7 @@ export function GalleryPane({ folder, listing, busy, error, query, sort, size, p
         <span className={styles.count} role="status" title={metadataTitle}>{busy ? <span className={styles.progress}><span className="aero-spinner" aria-hidden="true" /> Opening folder…</span> : selectedPhoto ? `${selectedPhoto.name} · ${formatBytes(selectedPhoto.bytes)}${(selectedPhoto.width ?? metadata?.width) && (selectedPhoto.height ?? metadata?.height) ? ` · ${selectedPhoto.width ?? metadata?.width} × ${selectedPhoto.height ?? metadata?.height}` : ''}` : `${photos.length.toLocaleString()} ${photos.length === 1 ? 'picture' : 'pictures'}${listing?.skipped ? ` · ${listing.skipped} unreadable` : ''}`}</span>
         <AeroIcon name="picture" size={15} />
         <AeroRange min={0} max={2} step={1} value={size} disabled={!listing} aria-label="Thumbnail size" aria-valuetext={sizes[size]} title={`Thumbnail size: ${sizes[size]}`} onChange={(event) => onSize(Number(event.currentTarget.value))} />
-        <AeroButton variant="toolbar" disabled={!selectedPhoto} title="View picture (Enter)" onClick={() => selectedPhoto && open(selectedPhoto.name)}>View</AeroButton>
+        <AeroButton variant="toolbar" disabled={!selectedPhoto} title="View picture" onClick={() => selectedPhoto && open(selectedPhoto.name)}>View</AeroButton>
       </AeroToolbar>
       {folder && viewing !== null && <Suspense fallback={<span className={styles.viewerLoading} role="status">Opening viewer…</span>}><PhotoViewer folder={folder} photos={photos} name={viewing} onNavigate={open} onClose={close} /></Suspense>}
     </main>

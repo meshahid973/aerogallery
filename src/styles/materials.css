@@ -37,8 +37,8 @@
 .aero-button--accent { background: var(--green-gradient); border-color: var(--line-strong); color: var(--text); }
 .aero-button--toolbar { background: transparent; border-color: transparent; box-shadow: none; padding-inline: 7px; }
 .aero-button--toolbar.aero-icon-button { padding-inline: 4px; }
-.aero-button--toolbar:not(:disabled):hover { background: var(--selection-gradient); border-color: var(--selection-edge); }
 .aero-button:not(:disabled):hover, .aero-select:not(:disabled):hover { background: var(--blue-gradient); border-color: var(--line-strong); box-shadow: var(--edge-light), var(--raised-shadow); }
+.aero-button--toolbar:not(:disabled):hover { background: var(--selection-gradient); border-color: var(--selection-edge); }
 .aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: var(--focus); }
 .aero-button:not(:disabled):active, .aero-button[aria-pressed="true"]:not(:disabled) { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
 .aero-button:focus-visible, .aero-select:focus-visible, .aero-input:focus-visible { outline-offset: 2px; }

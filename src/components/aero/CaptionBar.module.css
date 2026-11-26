@@ -18,7 +18,7 @@
 .buttons { display: flex; flex: 0 0 auto; border: 1px solid var(--line-strong); border-top: 0; border-radius: 0 0 6px 6px; overflow: visible; box-shadow: var(--raised-shadow); }
 .buttons button { display: grid; place-items: center; width: 35px; height: 26px; border: 0; border-right: 1px solid var(--line-strong); color: #fff; background: var(--caption-button); box-shadow: var(--edge-light); cursor: pointer; }
 .buttons button:first-child { border-bottom-left-radius: 5px; }
- .buttons button:last-child { width: 48px; border-right: 0; border-bottom-right-radius: 5px; }
+.buttons button:last-child { width: 48px; border-right: 0; border-bottom-right-radius: 5px; }
 .buttons button svg { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: square; filter: drop-shadow(0 1px 0 #16384b); }
 .buttons button:not(:disabled):hover { background: var(--caption-hover); }
 .buttons button:not(:disabled):active { background: var(--caption-pressed); }

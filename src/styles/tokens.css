@@ -20,7 +20,6 @@
   --saturation: 48%;
   --glass-tint: 178, 223, 247;
   --radius-control: 4px;
-  --reflection: #ffffffb3;
   --accent-start: #efffda;
   --accent-light: #c9eb9c;
   --accent-dark: #89c85d;
@@ -45,7 +44,6 @@
   --orb-edge: hsl(var(--hue) 74% 32%);
   --orb-shadow: inset 0 0 0 1px #ffffffa6, inset 0 -3px 6px #ffffff55, 0 2px 4px #173e5140;
   --hover-surface: hsl(var(--hue) 72% 94%);
-  --glass-highlight: linear-gradient(180deg, var(--reflection), #ffffff25 45%, #ffffff8c 48%, hsl(var(--hue) 75% 42% / .16) 50%, hsl(var(--hue) 90% 82% / .28));
   --toolbar-gradient: linear-gradient(#fff, hsl(var(--hue) 44% 94%) 47%, hsl(var(--hue) 45% 84%) 51%, hsl(var(--hue) 53% 94%));
   --selection-gradient: linear-gradient(#fff, hsl(var(--hue) 90% 91%) 45%, hsl(var(--hue) 72% 78%) 50%, hsl(var(--hue) 70% 91%));
   --silver-gradient: linear-gradient(#fff, hsl(var(--hue) 25% 94%) 46%, hsl(var(--hue) 30% 81%) 51%, hsl(var(--hue) 35% 94%));
@@ -67,7 +65,6 @@
   --caption-glass: linear-gradient(105deg, #ffffffb0, transparent 45%, #ffffff5c), linear-gradient(#ffffffbc, #a9f4df24 55%, #36b8ad35);
   --command-glass: linear-gradient(#fafffff0, #bcece3b0 53%, #e2fff6db);
   --radius-control: 11px;
-  --reflection: #ffffffe0;
   --silver-gradient: linear-gradient(#fff, #dcf8f4 25%, #a6dcd7 50%, #e8fffb 85%, #b5e5dc);
   --blue-gradient: linear-gradient(#fff, #9af9ee 25%, #45bcb5 55%, #a3ffec 90%);
   --edge-light: inset 0 1px 1px #fff, inset 0 -1px 1px #ffffffb0;
@@ -82,8 +79,6 @@
   --glass-tint: 199, 180, 239;
   --caption-glass: linear-gradient(112deg, #91f8dd88, transparent 38%, #ad86ec82), linear-gradient(#ffffffaf, #ffffff0a 80%, #7d59c135);
   --command-glass: linear-gradient(112deg, #d9fff3a0, transparent 42%, #e8dcffa0), linear-gradient(#fffdf9d9, #e7e0f5d9);
-  --reflection: #ffffffb8;
-  --glass-highlight: linear-gradient(112deg, #81efd646, transparent 40%, #c4a6ff60), linear-gradient(#fff9, #ffffff15 46%, #ffffff80 48%, #795dc52e 50%, #e9d8ff3d);
   --sidebar: linear-gradient(130deg, #f5f1ff, #e5eafa 70%, #def5ee);
   --accent-start: #f2fffa;
   --accent-light: #b7eadf;
@@ -96,7 +91,6 @@
   --glass-tint: 221, 231, 242;
   --caption-glass: linear-gradient(115deg, #ffffffe0, transparent 42%, #ffffff6b), linear-gradient(#ffffffbf, #aab9ca35);
   --command-glass: linear-gradient(#fffffff0, #e7edf4c9 60%, #d7e0ebdc);
-  --reflection: #ffffffcf;
   --paper: #fafcfe;
   --sidebar: linear-gradient(100deg, #f7faff, #e9edf3);
   --viewer-surface: #edf0f3;

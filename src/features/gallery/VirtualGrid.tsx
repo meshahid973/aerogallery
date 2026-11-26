@@ -24,7 +24,7 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   return (
     <li className={styles.photoCell} aria-posinset={index + 1} aria-setsize={total}>
       <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onKeyDown={(event) => { if (error && !event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === 'r') { event.preventDefault(); retry(); } }} onContextMenu={error ? (event) => { event.preventDefault(); retry(); } : undefined} title={error ? `${photo.name} — ${error} (R or right-click to retry)` : photo.name}>
-        <span className={styles.imageFrame}>
+        <span className={styles.imageFrame} data-placeholder={!url}>
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" onError={markFailed} /> : error ? <span className={styles.previewError}>Preview unavailable</span> : <span className={styles.previewPending}><AeroIcon name="picture" size={34} /></span>}
         </span>
         <span className={styles.filename}>{photo.name}</span>

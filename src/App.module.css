@@ -26,7 +26,6 @@
   min-width: 0;
   min-height: var(--control-height);
   overflow: auto hidden;
-  scrollbar-width: thin;
   padding-inline: 4px;
   border-left: 1px solid var(--line);
   padding-left: 9px;
@@ -66,8 +65,7 @@
   overflow: hidden;
 }
 .appearance {
-  inset: auto 10px auto auto;
-  top: calc(var(--caption-height) + 46px);
+  inset: calc(var(--caption-height) + 46px) 10px auto auto;
   margin: 0;
   padding: 12px;
   color: var(--text);

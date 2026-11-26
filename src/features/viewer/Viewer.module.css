@@ -31,7 +31,7 @@
 .glyph { font-size: 17px; line-height: 1; min-width: 28px; padding: 3px 5px; }
 .zoom { font-size: 12px; font-variant-numeric: tabular-nums; min-width: 35px; text-align: center; }
 .playback { display: flex; align-items: center; justify-content: center; gap: 0; }
-.playback > button:not(.play) { width: 40px; height: 34px; }
+.playback > button:not(.play) { width: 40px; height: 34px; min-width: 0; }
 .playback > button:first-child { border-radius: 20px 3px 3px 20px; padding-right: 8px; }
 .playback > button:last-child { border-radius: 3px 20px 20px 3px; padding-left: 8px; }
 .playback .play { position: relative; z-index: 1; margin: 0 -3px; border-radius: 50%; width: 46px; height: 46px; padding: 4px; background: var(--orb-material); border-color: var(--orb-edge); box-shadow: var(--orb-shadow); }

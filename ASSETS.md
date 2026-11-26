@@ -37,4 +37,4 @@ The three user-supplied CSS references informed material techniques only. All th
 - `public/appearance/nature.jpg`: **Fall Field**, National Park Service, photographed November 12, 2023 at First State National Historical Park. [Wikimedia Commons source and public-domain notice](https://commons.wikimedia.org/wiki/File:Green_rolling_hills_are_accompanied_by_tall_trees_and_a_blue_sky_in_the_background._(8462d90c-90a0-4138-a3ba-b3aa237e468a).JPG). Resized to 480 × 320 for the offline theme preview.
 - `public/appearance/grass.png`: CC0 grass photograph texture, grayscale crop distributed in [scikit-image v0.25.2](https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/grass.png). [Image-specific CC0 notice](https://scikit-image.org/docs/stable/api/skimage.data.html#skimage.data.grass).
 
-Both are used only in the appearance swatches, not imported into the photo library or painted behind photographs. No runtime network access is needed.
+Both are used in appearance swatches; the landscape is also the empty-library illustration. Neither is imported into the photo library or painted behind photographs. No runtime network access is needed.

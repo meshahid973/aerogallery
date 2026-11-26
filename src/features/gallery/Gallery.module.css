@@ -55,7 +55,7 @@
   cursor: pointer;
 }
 .treeItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gallery { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper); }
+.gallery { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--paper); }
 .content {
   flex: 1;
   min-width: 0;
@@ -113,7 +113,7 @@
   overflow: hidden;
   border-radius: 2px;
 }
-.thumbnail { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: var(--photo-shadow); outline: 1px solid var(--photo-edge); outline-offset: -1px; }
+.thumbnail { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: var(--photo-shadow); outline: 1px solid var(--photo-edge); outline-offset: -1px; }
 .filename { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .status { flex: 0 0 auto; min-height: 30px; border-top: 1px solid var(--line); gap: 9px; background: var(--footer-material); box-shadow: inset 0 1px 0 #fff; }
 .progress { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
@@ -129,11 +129,11 @@
 }
 
 .photoCell { contain: layout; }
-.imageFrame:has(.previewPending), .imageFrame:has(.previewError) { background: var(--photo-surface); }
+.imageFrame[data-placeholder="true"] { background: var(--photo-surface); }
 .photo:focus-visible { outline-offset: -2px; }
 .previewError { font-size: 11px; line-height: 1.2; color: var(--error); padding: 3px 5px; text-align: center; }
 .previewPending { opacity: .55; }
 .welcomePhoto { width: min(240px, 100%); height: auto; aspect-ratio: 3 / 2; object-fit: cover; border: 5px solid #fff; outline: 1px solid var(--line); border-radius: 3px; box-shadow: 0 3px 9px #193b5429; }
-.viewerLoading { position: fixed; bottom: 38px; right: 16px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-control); }
+.viewerLoading { position: absolute; bottom: 38px; right: 16px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-control); }
 .gallery:has(dialog[open]) > :not(dialog) { visibility: hidden; }
 .gallery:has(dialog[open]) { background: transparent; }
