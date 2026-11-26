@@ -138,7 +138,13 @@ fn main() {
     tauri::Builder::default()
         .manage(shell::ShellInbox::default())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
-            shell::enqueue(app, shell::arguments(args.into_iter().map(std::path::PathBuf::from), std::path::Path::new(&cwd)));
+            shell::enqueue(
+                app,
+                shell::arguments(
+                    args.into_iter().map(std::path::PathBuf::from),
+                    std::path::Path::new(&cwd),
+                ),
+            );
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
                 let _ = window.show();
@@ -146,11 +152,17 @@ fn main() {
             }
         }))
         .on_webview_event(|webview, event| {
-            if webview.label() != "main" { return; }
+            if webview.label() != "main" {
+                return;
+            }
             if let tauri::WebviewEvent::DragDrop(event) = event {
                 match event {
-                    tauri::DragDropEvent::Enter { .. } => { let _ = webview.emit("shell-drag", true); }
-                    tauri::DragDropEvent::Leave => { let _ = webview.emit("shell-drag", false); }
+                    tauri::DragDropEvent::Enter { .. } => {
+                        let _ = webview.emit("shell-drag", true);
+                    }
+                    tauri::DragDropEvent::Leave => {
+                        let _ = webview.emit("shell-drag", false);
+                    }
                     tauri::DragDropEvent::Drop { paths, .. } => {
                         let _ = webview.emit("shell-drag", false);
                         shell::enqueue(webview.app_handle(), paths.clone());
@@ -164,7 +176,10 @@ fn main() {
             let library = Library::open(&data).map_err(std::io::Error::other)?;
             app.manage(library);
             if let Ok(cwd) = std::env::current_dir() {
-                shell::enqueue(app.handle(), shell::arguments(std::env::args_os().map(std::path::PathBuf::from), &cwd));
+                shell::enqueue(
+                    app.handle(),
+                    shell::arguments(std::env::args_os().map(std::path::PathBuf::from), &cwd),
+                );
             }
             Ok(())
         })
