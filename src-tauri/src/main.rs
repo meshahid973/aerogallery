@@ -4,16 +4,16 @@ mod disk_cache;
 mod imaging;
 mod index;
 mod library;
-mod paths;
-mod shell;
-#[cfg(windows)]
-mod windows_shell;
 #[cfg(windows)]
 mod native_window;
+mod paths;
+mod shell;
 #[cfg(windows)]
 mod taskbar;
 #[cfg(windows)]
 mod window_placement;
+#[cfg(windows)]
+mod windows_shell;
 
 use imaging::PhotoMetadata;
 use library::{Library, Listing, Root};
@@ -135,33 +135,87 @@ async fn full_image(
 
 #[tauri::command]
 async fn viewer_fullscreen(window: tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
-    #[cfg(windows)] { native_window::fullscreen(&window, enabled) }
-    #[cfg(not(windows))] { window.set_fullscreen(enabled).map_err(|_| "Cannot change fullscreen mode.".to_string()) }
+    #[cfg(windows)]
+    {
+        native_window::fullscreen(&window, enabled)
+    }
+    #[cfg(not(windows))]
+    {
+        window
+            .set_fullscreen(enabled)
+            .map_err(|_| "Cannot change fullscreen mode.".to_string())
+    }
 }
 
 #[tauri::command]
-async fn chrome_regions(window: tauri::WebviewWindow, bounds: Option<[i32; 4]>) -> Result<bool, String> {
-    #[cfg(windows)] { native_window::regions(&window, bounds) }
-    #[cfg(not(windows))] { let _ = (window, bounds); Ok(false) }
+async fn chrome_regions(
+    window: tauri::WebviewWindow,
+    bounds: Option<[i32; 4]>,
+) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        native_window::regions(&window, bounds)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, bounds);
+        Ok(false)
+    }
 }
 
 #[tauri::command]
 async fn native_system_menu(window: tauri::WebviewWindow, cursor: bool) -> Result<(), String> {
-    #[cfg(windows)] { native_window::show_menu(&window, cursor) }
-    #[cfg(not(windows))] { let _ = (window, cursor); Ok(()) }
+    #[cfg(windows)]
+    {
+        native_window::show_menu(&window, cursor)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, cursor);
+        Ok(())
+    }
 }
 
 #[tauri::command]
-async fn sync_taskbar(window: tauri::WebviewWindow, active: bool, previous: bool, next: bool, can_play: bool, playing: bool) -> Result<(), String> {
-    #[cfg(windows)] { native_window::playback(&window, taskbar::Playback { active, previous, next, can_play, playing }) }
-    #[cfg(not(windows))] { let _ = (window, active, previous, next, can_play, playing); Ok(()) }
+async fn sync_taskbar(
+    window: tauri::WebviewWindow,
+    active: bool,
+    previous: bool,
+    next: bool,
+    can_play: bool,
+    playing: bool,
+) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        native_window::playback(
+            &window,
+            taskbar::Playback {
+                active,
+                previous,
+                next,
+                can_play,
+                playing,
+            },
+        )
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, active, previous, next, can_play, playing);
+        Ok(())
+    }
 }
 
 fn main() {
     tauri::Builder::default()
         .manage(shell::ShellInbox::default())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
-            shell::enqueue(app, shell::arguments(args.into_iter().map(std::path::PathBuf::from), std::path::Path::new(&cwd)));
+            shell::enqueue(
+                app,
+                shell::arguments(
+                    args.into_iter().map(std::path::PathBuf::from),
+                    std::path::Path::new(&cwd),
+                ),
+            );
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
                 let _ = window.show();
@@ -169,11 +223,17 @@ fn main() {
             }
         }))
         .on_webview_event(|webview, event| {
-            if webview.label() != "main" { return; }
+            if webview.label() != "main" {
+                return;
+            }
             if let tauri::WebviewEvent::DragDrop(event) = event {
                 match event {
-                    tauri::DragDropEvent::Enter { .. } => { let _ = webview.emit("shell-drag", true); }
-                    tauri::DragDropEvent::Leave => { let _ = webview.emit("shell-drag", false); }
+                    tauri::DragDropEvent::Enter { .. } => {
+                        let _ = webview.emit("shell-drag", true);
+                    }
+                    tauri::DragDropEvent::Leave => {
+                        let _ = webview.emit("shell-drag", false);
+                    }
                     tauri::DragDropEvent::Drop { paths, .. } => {
                         let _ = webview.emit("shell-drag", false);
                         shell::enqueue(webview.app_handle(), paths.clone());
@@ -186,14 +246,22 @@ fn main() {
             let data = app.path().app_data_dir()?;
             let library = Library::open(&data).map_err(std::io::Error::other)?;
             app.manage(library);
-            #[cfg(windows)] {
+            #[cfg(windows)]
+            {
                 app.manage(native_window::NativeState::default());
                 if let Some(window) = app.get_webview_window("main") {
-                    if let Err(error) = native_window::install(&window, data.join("window-placement.json")) { eprintln!("Window integration: {error}"); }
+                    if let Err(error) =
+                        native_window::install(&window, data.join("window-placement.json"))
+                    {
+                        eprintln!("Window integration: {error}");
+                    }
                 }
             }
             if let Ok(cwd) = std::env::current_dir() {
-                shell::enqueue(app.handle(), shell::arguments(std::env::args_os().map(std::path::PathBuf::from), &cwd));
+                shell::enqueue(
+                    app.handle(),
+                    shell::arguments(std::env::args_os().map(std::path::PathBuf::from), &cwd),
+                );
             }
             Ok(())
         })

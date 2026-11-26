@@ -5,6 +5,7 @@ import { isWindows, setChromeRegions, showSystemMenu } from './desktop';
 
 let frame: number | null = null;
 let previous = '';
+let tail: Promise<unknown> = Promise.resolve();
 export function scheduleChromeRegions() {
   if (!isWindows || frame !== null) return;
   frame = requestAnimationFrame(() => {
@@ -18,7 +19,10 @@ export function scheduleChromeRegions() {
     const key = JSON.stringify(bounds);
     if (key === previous) return;
     previous = key;
-    void setChromeRegions(bounds).catch(() => { if (previous === key) previous = ''; });
+    tail = tail.catch(() => {}).then(() => {
+      if (previous !== key) return;
+      return setChromeRegions(bounds).catch(() => { if (previous === key) previous = ''; });
+    });
   });
 }
 

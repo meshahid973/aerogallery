@@ -13,10 +13,10 @@ export function PhotoActions({ panelRef, folder, photo, onOpen }: {
   const [position, setPosition] = useState('fill');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  return <div ref={panelRef} popover="auto" className="aero-photo-actions" aria-label="Picture actions">
+  return <div ref={panelRef} popover="auto" role="group" className="aero-photo-actions" aria-label="Picture actions">
     {onOpen && <AeroButton disabled={!photo} onClick={() => { panelRef.current?.hidePopover(); onOpen(); }}>View picture</AeroButton>}
     {isWindows && <><label>Wallpaper position
-      <AeroSelect value={position} onChange={(event) => setPosition(event.currentTarget.value)}>
+      <AeroSelect aria-label="Wallpaper position" value={position} onChange={(event) => setPosition(event.currentTarget.value)}>
         <option value="fill">Fill</option><option value="fit">Fit</option><option value="stretch">Stretch</option><option value="center">Center</option><option value="tile">Tile</option><option value="span">Span</option>
       </AeroSelect></label>
       <AeroButton disabled={!photo || !folder || busy} onClick={() => {

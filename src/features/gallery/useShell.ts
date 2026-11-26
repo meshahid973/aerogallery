@@ -8,6 +8,7 @@ export function useShell(busy: boolean, addRoots: (roots: Root[]) => Promise<voi
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  const mounted = useRef(false);
   const running = useRef(false);
   const pending = useRef(false);
   const current = useRef({ addRoots });
@@ -15,6 +16,7 @@ export function useShell(busy: boolean, addRoots: (roots: Root[]) => Promise<voi
 
   useEffect(() => {
     if (!isDesktop) return;
+    mounted.current = true;
     let active = true;
     const releases: (() => void)[] = [];
     const wake = () => {
@@ -30,7 +32,7 @@ export function useShell(busy: boolean, addRoots: (roots: Root[]) => Promise<voi
     void listen<boolean>('shell-drag', ({ payload }) => { if (active) setDragging(payload); }).then((release) => {
       if (active) releases.push(release); else release();
     }, () => {});
-    return () => { active = false; for (const release of releases) release(); };
+    return () => { mounted.current = false; active = false; for (const release of releases) release(); };
   }, []);
 
   useEffect(() => {
@@ -41,14 +43,16 @@ export function useShell(busy: boolean, addRoots: (roots: Root[]) => Promise<voi
       try {
         const items = await takeShellItems();
         if (!items) return;
+        if (!mounted.current) { if (items.session) void releaseExternal(items.session).catch(() => {}); return; }
         if (items.roots.length) await current.current.addRoots(items.roots);
+        if (!mounted.current) { if (items.session) void releaseExternal(items.session).catch(() => {}); return; }
         if (items.photos.length) setExternal(items);
         setError(items.rejected ? `${items.rejected} unsupported or inaccessible item(s).` : '');
       } catch (failure) {
-        setError(typeof failure === 'string' ? failure : 'Cannot open selected items.');
+        if (mounted.current) setError(typeof failure === 'string' ? failure : 'Cannot open selected items.');
       } finally {
         running.current = false;
-        if (pending.current) setRevision((value) => value + 1);
+        if (mounted.current && pending.current) setRevision((value) => value + 1);
       }
     })();
   }, [busy, revision]);
