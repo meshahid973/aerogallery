@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { RefObject } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -15,20 +15,21 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
   const [error, setError] = useState('');
   const [revision, refresh] = useState(0);
   const [focused, setFocused] = useState(true);
-  const channels = tintChannels(value).join(', ');
   function change(next: Appearance) {
     setValue(next);
     setError(saveAppearance(next) ? '' : 'Appearance could not be saved.');
   }
-  useLayoutEffect(() => {
+  useEffect(() => {
     const node = shell.current;
     if (!node) return;
     node.dataset.theme = value.theme;
     node.dataset.windowFocused = String(focused);
-    node.style.setProperty('--appearance-tint', channels);
+    // Keep title-bar text legible even if a very dark custom tint is selected.
+    const readable = value.tint ? tintChannels(value).map((channel) => Math.round(120 + channel * (135 / 255))).join(', ') : tintChannels(value).join(', ');
+    node.style.setProperty('--appearance-tint', readable);
     node.style.setProperty('--appearance-opacity', String(value.opacity / 100));
     node.style.setProperty('--reflection-strength', String(value.reflection / 65));
-  }, [shell, value, channels, focused]);
+  }, [shell, value, focused]);
   useEffect(() => {
     const queries = [matchMedia('(prefers-reduced-transparency: reduce)'), matchMedia('(forced-colors: active)')];
     const changed = () => refresh((n) => n + 1);

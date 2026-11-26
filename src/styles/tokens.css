@@ -5,8 +5,6 @@
   --error: #8e2222;
   --white: #fff;
   --glass-effective-opacity: 1;
-  --glass-reflection: var(--reflection-strength, 1);
-  --glass-tint: var(--appearance-tint, var(--theme-glass-tint));
   --control-height: 28px;
   --caption-height: 36px;
   --space-1: 4px;
@@ -16,6 +14,8 @@
 }
 
 :root, [data-theme] {
+  --glass-reflection: var(--reflection-strength, 1);
+  --glass-tint: var(--appearance-tint, var(--theme-glass-tint));
   --hue: 201;
   --saturation: 48%;
   --theme-glass-tint: 178, 223, 247;
@@ -35,7 +35,7 @@
   --photo-surface: hsl(var(--hue) 30% 95%);
   --viewer-surface: hsl(var(--hue) 12% 94%);
   --caption-glass: linear-gradient(112deg, rgb(255 255 255 / clamp(0, calc(0.459 * var(--glass-reflection)), 1)), transparent 42%, rgb(255 255 255 / clamp(0, calc(0.145 * var(--glass-reflection)), 1)) 78%), linear-gradient(180deg, rgb(255 255 255 / clamp(0, calc(0.690 * var(--glass-reflection)), 1)), rgb(255 255 255 / clamp(0, calc(0.031 * var(--glass-reflection)), 1)) 77%, hsl(var(--hue) 50% 42% / calc(.12 * var(--glass-reflection))));
-  --command-glass: linear-gradient(180deg, rgb(255 255 255 / clamp(0, calc(0.612 * var(--glass-reflection)), 1)), hsl(var(--hue) 46% 95% / calc(.70 * var(--glass-reflection))) 43%, hsl(var(--hue) 53% 84% / calc(.85 * var(--glass-reflection))));
+  --command-glass: linear-gradient(180deg, rgb(255 255 255 / clamp(0, calc(0.612 * var(--glass-reflection)), 1)), hsl(var(--hue) 46% 95% / clamp(0, calc(.70 * var(--glass-reflection)), 1)) 43%, hsl(var(--hue) 53% 84% / clamp(0, calc(.85 * var(--glass-reflection)), 1)));
   --footer-material: linear-gradient(#fff, hsl(var(--hue) 35% 96%) 48%, hsl(var(--hue) 34% 88%));
   --selection-edge: hsl(var(--hue) 54% 63%);
   --photo-edge: hsl(var(--hue) 15% 73%);
