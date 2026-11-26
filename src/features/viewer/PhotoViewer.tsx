@@ -5,7 +5,7 @@ import { CaptionBar, customChrome } from '../../components/aero/CaptionBar';
 import { PhotoActions } from '../../components/aero/PhotoActions';
 import { AeroIcon } from '../../components/aero/Icon';
 import { suspendThumbnailQueue } from '../gallery/thumbnails';
-import { setViewerFullscreen } from '../../lib/desktop';
+import { setViewerFullscreen, isWindows } from '../../lib/desktop';
 import type { Folder, Photo } from '../../lib/desktop';
 import { photoKey, useViewerAsset } from './assets';
 import { PhotoStage } from './PhotoStage';
@@ -166,8 +166,8 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
           <AeroIconButton variant="toolbar" icon="fullscreen" label={fullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'} aria-pressed={fullscreen} disabled={windowBusy} onClick={() => void toggleFullscreen()} />
         </AeroToolbar>
       )}
-      <PhotoActions panelRef={actions} folder={folder} photo={photo} />
-      <div className={styles.surface} onContextMenu={(event) => { if (photo) { event.preventDefault(); actions.current?.showPopover(); } }} aria-busy={!ready && !error}>
+      {isWindows && <PhotoActions panelRef={actions} folder={folder} photo={photo} />}
+      <div className={styles.surface} onContextMenu={(event) => { if (photo && isWindows) { event.preventDefault(); actions.current?.showPopover(); actions.current?.querySelector<HTMLElement>('select')?.focus(); } }} aria-busy={!ready && !error}>
         {asset && !error && <PhotoStage key={asset.url} url={asset.url} name={name} onReady={onReady} onError={onError} controls={stage} onZoom={setZoom} />}
         {!ready && !error && <div className={styles.message} role="status"><span className="aero-spinner" aria-hidden="true" /> Opening picture…</div>}
         {error && <div className={styles.message} role="alert"><span>{error}</span>{photo && <AeroButton onClick={() => { setLoaded(''); setFailed(''); setRetry((value) => value + 1); }}>Retry</AeroButton>}</div>}
@@ -191,7 +191,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
         <div className={styles.group}>
           <AeroButton className={styles.glyph} title="Rotate left (Shift+R)" aria-label="Rotate left" disabled={!ready} onClick={() => stage.current?.rotate(-90)}><AeroIcon name="rotateLeft" size={18} /></AeroButton>
           <AeroButton className={styles.glyph} title="Rotate right (R)" aria-label="Rotate right" disabled={!ready} onClick={() => stage.current?.rotate(90)}><AeroIcon name="rotateRight" size={18} /></AeroButton>
-          <AeroButton variant="toolbar" aria-label="Picture actions" disabled={!photo} onClick={() => actions.current?.togglePopover()}>⋯</AeroButton>
+          {isWindows && <AeroButton variant="toolbar" aria-label="Picture actions" disabled={!photo} onClick={() => actions.current?.togglePopover()}>⋯</AeroButton>}
           <AeroSelect aria-label="Slideshow interval" title="Slideshow interval" value={interval} onChange={(event) => setInterval(Number(event.currentTarget.value))}>
             <option value={3}>3 s</option><option value={5}>5 s</option><option value={10}>10 s</option>
           </AeroSelect>
