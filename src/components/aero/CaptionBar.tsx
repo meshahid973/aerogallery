@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { isDesktop } from '../../lib/desktop';
 import { AeroIcon } from './Icon';
@@ -8,7 +9,7 @@ export const customChrome = !isDesktop || /Windows/i.test(navigator.userAgent);
 type Direction = Parameters<ReturnType<typeof getCurrentWindow>['startResizeDragging']>[0];
 const edges: Direction[] = ['North', 'South', 'East', 'West', 'NorthEast', 'NorthWest', 'SouthEast', 'SouthWest'];
 
-export function CaptionBar({ title = 'AeroGallery', fullscreen = false }: { title?: string; fullscreen?: boolean }) {
+export function CaptionBar({ title = 'AeroGallery', fullscreen = false, leading, trailing }: { title?: string; fullscreen?: boolean; leading?: ReactNode; trailing?: ReactNode }) {
   const [maximized, setMaximized] = useState(false);
   const [focused, setFocused] = useState(true);
   const [error, setError] = useState('');
@@ -59,11 +60,13 @@ export function CaptionBar({ title = 'AeroGallery', fullscreen = false }: { titl
   if (!customChrome || fullscreen) return null;
   return (
     <div className={styles.caption} data-focused={focused} data-maximized={maximized}>
+      {leading && <div className={styles.tools}>{leading}</div>}
       <div className={styles.drag} data-tauri-drag-region>
-        <AeroIcon name="picture" size={18} />
-        <span>{title}</span>
+        {!leading && <AeroIcon name="picture" size={18} />}
+        <span title={title}>{title}</span>
         {error && <span role="alert" className={styles.error}>{error}</span>}
       </div>
+      {trailing && <div className={styles.tools}>{trailing}</div>}
       <div className={styles.buttons} role="group" aria-label="Window controls">
         <button type="button" title="Minimize" aria-label="Minimize window" disabled={!isDesktop} onClick={() => void action('minimize')}>
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 11.5h10" /></svg>

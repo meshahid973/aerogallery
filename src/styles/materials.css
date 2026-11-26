@@ -8,8 +8,8 @@
 }
 .aero-toolbar[data-tone="glass"] {
   color: var(--text);
-  background: var(--glass-highlight), rgba(var(--glass-tint), var(--glass-density));
-  box-shadow: inset 0 1px 0 #ffffff9c;
+  background: var(--command-glass), rgba(var(--glass-tint), var(--glass-density));
+  box-shadow: inset 0 1px 0 #ffffff9c, inset 0 -1px 0 #ffffff80;
 }
 @media (prefers-reduced-transparency: reduce) {
   .aero-toolbar[data-tone="glass"] { background: var(--toolbar-gradient); }
@@ -37,9 +37,11 @@
 .aero-button--accent { background: var(--green-gradient); border-color: var(--line-strong); color: var(--text); }
 .aero-button--toolbar { background: transparent; border-color: transparent; box-shadow: none; padding-inline: 7px; }
 .aero-button--toolbar.aero-icon-button { padding-inline: 4px; }
+.aero-button--toolbar:not(:disabled):hover { background: var(--selection-gradient); border-color: var(--selection-edge); }
 .aero-button:not(:disabled):hover, .aero-select:not(:disabled):hover { background: var(--blue-gradient); border-color: var(--line-strong); box-shadow: var(--edge-light), var(--raised-shadow); }
 .aero-button--accent:not(:disabled):hover { background: var(--green-gradient); border-color: var(--focus); }
 .aero-button:not(:disabled):active, .aero-button[aria-pressed="true"]:not(:disabled) { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
+.aero-button:focus-visible, .aero-select:focus-visible, .aero-input:focus-visible { outline-offset: 2px; }
 .aero-button:disabled, .aero-select:disabled { background: var(--photo-surface); border-color: var(--line); color: var(--text-muted); box-shadow: none; }
 .aero-button--toolbar:disabled { background: transparent; border-color: transparent; }
 .aero-button:disabled img { opacity: .45; }

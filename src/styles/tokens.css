@@ -4,8 +4,9 @@
   font-size: 13px;
   --error: #8e2222;
   --white: #fff;
-  --glass-density: .73;
+  --glass-density: .78;
   --control-height: 28px;
+  --caption-height: 36px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -17,7 +18,7 @@
 :root, [data-theme] {
   --hue: 201;
   --saturation: 48%;
-  --glass-tint: 164, 218, 244;
+  --glass-tint: 178, 223, 247;
   --radius-control: 4px;
   --reflection: #ffffffb3;
   --accent-start: #efffda;
@@ -27,13 +28,22 @@
   --text: hsl(var(--hue) 45% 17%);
   --text-muted: hsl(var(--hue) 29% 32%);
   --heading: hsl(var(--hue) 53% 26%);
-  --paper: hsl(var(--hue) 35% 98.5%);
+  --paper: #fcfefe;
   --line: hsl(var(--hue) 35% 76%);
   --line-strong: hsl(var(--hue) 33% 43%);
   --focus: hsl(var(--hue) 90% 32%);
-  --sidebar: linear-gradient(100deg, hsl(var(--hue) 53% 97%), hsl(var(--hue) 44% 90%));
+  --sidebar: linear-gradient(155deg, hsl(var(--hue) 61% 98%) 4%, hsl(var(--hue) 49% 94%) 53%, hsl(var(--hue) 37% 92%));
   --photo-surface: hsl(var(--hue) 30% 95%);
-  --viewer-surface: hsl(var(--hue) 18% 93%);
+  --viewer-surface: hsl(var(--hue) 12% 94%);
+  --caption-glass: linear-gradient(112deg, #ffffff75, transparent 42%, #ffffff25 78%), linear-gradient(180deg, #ffffffb0, #ffffff08 77%, hsl(var(--hue) 50% 42% / .12));
+  --command-glass: linear-gradient(180deg, #ffffff9c, hsl(var(--hue) 46% 95% / .70) 43%, hsl(var(--hue) 53% 84% / .85));
+  --footer-material: linear-gradient(#fff, hsl(var(--hue) 35% 96%) 48%, hsl(var(--hue) 34% 88%));
+  --selection-edge: hsl(var(--hue) 54% 63%);
+  --photo-edge: hsl(var(--hue) 15% 73%);
+  --photo-shadow: 0 1px 2px #183e5326;
+  --orb-material: radial-gradient(ellipse at 50% 11%, #fff 0%, #ffffffb0 15%, transparent 48%), linear-gradient(hsl(var(--hue) 85% 68%), hsl(var(--hue) 72% 48%) 47%, hsl(var(--hue) 88% 31%) 50%, hsl(var(--hue) 78% 70%) 95%);
+  --orb-edge: hsl(var(--hue) 74% 32%);
+  --orb-shadow: inset 0 0 0 1px #ffffffa6, inset 0 -3px 6px #ffffff55, 0 2px 4px #173e5140;
   --hover-surface: hsl(var(--hue) 72% 94%);
   --glass-highlight: linear-gradient(180deg, var(--reflection), #ffffff25 45%, #ffffff8c 48%, hsl(var(--hue) 75% 42% / .16) 50%, hsl(var(--hue) 90% 82% / .28));
   --toolbar-gradient: linear-gradient(#fff, hsl(var(--hue) 44% 94%) 47%, hsl(var(--hue) 45% 84%) 51%, hsl(var(--hue) 53% 94%));
@@ -54,6 +64,8 @@
   --hue: 179;
   --saturation: 67%;
   --glass-tint: 146, 232, 223;
+  --caption-glass: linear-gradient(105deg, #ffffffb0, transparent 45%, #ffffff5c), linear-gradient(#ffffffbc, #a9f4df24 55%, #36b8ad35);
+  --command-glass: linear-gradient(#fafffff0, #bcece3b0 53%, #e2fff6db);
   --radius-control: 11px;
   --reflection: #ffffffe0;
   --silver-gradient: linear-gradient(#fff, #dcf8f4 25%, #a6dcd7 50%, #e8fffb 85%, #b5e5dc);
@@ -68,6 +80,8 @@
   --hue: 256;
   --saturation: 57%;
   --glass-tint: 199, 180, 239;
+  --caption-glass: linear-gradient(112deg, #91f8dd88, transparent 38%, #ad86ec82), linear-gradient(#ffffffaf, #ffffff0a 80%, #7d59c135);
+  --command-glass: linear-gradient(112deg, #d9fff3a0, transparent 42%, #e8dcffa0), linear-gradient(#fffdf9d9, #e7e0f5d9);
   --reflection: #ffffffb8;
   --glass-highlight: linear-gradient(112deg, #81efd646, transparent 40%, #c4a6ff60), linear-gradient(#fff9, #ffffff15 46%, #ffffff80 48%, #795dc52e 50%, #e9d8ff3d);
   --sidebar: linear-gradient(130deg, #f5f1ff, #e5eafa 70%, #def5ee);
@@ -80,6 +94,8 @@
   --hue: 213;
   --saturation: 17%;
   --glass-tint: 221, 231, 242;
+  --caption-glass: linear-gradient(115deg, #ffffffe0, transparent 42%, #ffffff6b), linear-gradient(#ffffffbf, #aab9ca35);
+  --command-glass: linear-gradient(#fffffff0, #e7edf4c9 60%, #d7e0ebdc);
   --reflection: #ffffffcf;
   --paper: #fafcfe;
   --sidebar: linear-gradient(100deg, #f7faff, #e9edf3);

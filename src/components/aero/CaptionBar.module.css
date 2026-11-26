@@ -1,28 +1,31 @@
 .caption {
   display: flex;
-  flex: 0 0 35px;
+  flex: 0 0 var(--caption-height);
   min-width: 0;
   align-items: flex-start;
   padding: 0 8px 0 10px;
-  background: var(--glass-highlight), rgba(var(--glass-tint), var(--glass-density));
+  gap: 7px;
+  background: var(--caption-glass), rgba(var(--glass-tint), var(--glass-density));
   box-shadow: inset 0 1px 0 #ffffffc9;
   user-select: none;
 }
-.drag { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; height: 35px; color: var(--heading); text-shadow: 0 1px 1px #ffffffd9; font-weight: 500; }
+.drag { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; height: var(--caption-height); color: var(--text); text-shadow: 0 1px 1px #ffffffd9; font-weight: 500; }
 .drag > * { pointer-events: none; }
 .drag span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .error { color: var(--error); }
+.tools { display: flex; align-items: center; gap: 7px; align-self: center; min-width: 0; }
+.tools button { min-height: 27px; }
 .buttons { display: flex; flex: 0 0 auto; border: 1px solid var(--line-strong); border-top: 0; border-radius: 0 0 6px 6px; overflow: visible; box-shadow: var(--raised-shadow); }
-.buttons button { display: grid; place-items: center; width: 34px; height: 25px; border: 0; border-right: 1px solid var(--line-strong); color: #fff; background: var(--caption-button); box-shadow: var(--edge-light); cursor: pointer; }
+.buttons button { display: grid; place-items: center; width: 35px; height: 26px; border: 0; border-right: 1px solid var(--line-strong); color: #fff; background: var(--caption-button); box-shadow: var(--edge-light); cursor: pointer; }
 .buttons button:first-child { border-bottom-left-radius: 5px; }
-.buttons button:last-child { width: 46px; border-right: 0; border-bottom-right-radius: 5px; }
+ .buttons button:last-child { width: 48px; border-right: 0; border-bottom-right-radius: 5px; }
 .buttons button svg { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: square; filter: drop-shadow(0 1px 0 #16384b); }
 .buttons button:not(:disabled):hover { background: var(--caption-hover); }
 .buttons button:not(:disabled):active { background: var(--caption-pressed); }
-.buttons .close { background: linear-gradient(#ffd0bf, #e77258 48%, #b52f23 50%, #e26349); }
+.buttons .close { background: linear-gradient(#ffb9a0, #df7258 45%, #a82920 50%, #d65038); }
 .buttons .close:not(:disabled):hover { background: linear-gradient(#fff1df, #ffad80 47%, #dd3923 50%, #ff8052); }
 .buttons .close:not(:disabled):active { background: linear-gradient(#a02b25, #e46d50); }
-.caption[data-focused="false"] .buttons button { color: #405365; background: var(--silver-gradient); }
+.caption[data-focused="false"] .buttons button:not(:hover):not(:active) { color: #405365; background: var(--silver-gradient); }
 .caption[data-focused="false"] .buttons button svg { filter: none; }
 .caption .buttons button:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
 .resize { position: fixed; z-index: 200; }

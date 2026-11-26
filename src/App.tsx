@@ -73,8 +73,8 @@ export default function App() {
       <CaptionBar />
       <AeroToolbar className={styles.commands} data-tone="glass" aria-label="Library commands">
         <div className={styles.actions}>
-          <AeroButton variant="toolbar" disabled={!isDesktop || busy} title="Add folder (Ctrl+O)" onClick={() => void gallery.add()}>
-            <AeroIcon name="openFolder" size={22} /> Add folder
+          <AeroButton variant="accent" disabled={!isDesktop || busy} title="Add folder (Ctrl+O)" onClick={() => void gallery.add()}>
+            <AeroIcon name="openFolder" size={20} /> Add folder
           </AeroButton>
           <AeroIconButton variant="toolbar" icon="back" label="Back (Alt+Left)" disabled={!gallery.canBack || busy} onClick={() => void gallery.back()} />
           <AeroIconButton variant="toolbar" icon="up" label="Parent folder (Alt+Up)" disabled={!active?.parts.length || busy} onClick={() => active && void gallery.select({ ...active, parts: active.parts.slice(0, -1) })} />
@@ -82,6 +82,7 @@ export default function App() {
           <AeroIconButton variant="toolbar" icon="remove" label="Remove source folder from library" disabled={!active || busy} onClick={() => void gallery.remove()} />
         </div>
         <nav className={styles.breadcrumbs} aria-label="Current folder">
+          <AeroIcon name="folder" size={17} />
           {breadcrumbs.length ? breadcrumbs.map((item, index) => (
             <span key={index} className={styles.crumb}>
               {index > 0 && <span aria-hidden="true" className={styles.crumbDivider}>›</span>}
@@ -103,14 +104,14 @@ export default function App() {
         </AeroSelect>
         <AeroIconButton variant="toolbar" icon="appearance" label="Appearance" popoverTarget="appearance-panel" />
       </AeroToolbar>
-      <div id="appearance-panel" popover="auto" className={styles.appearance}>
+      <div id="appearance-panel" popover="auto" className={styles.appearance} aria-label="Appearance">
         <div className={styles.themeChoices} role="group" aria-label="Theme">
           {themes.map((choice) => <button type="button" className={styles.themeChoice} key={choice} aria-pressed={theme === choice} onClick={() => { setTheme(choice); setPreferenceError(saveTheme(choice) ? '' : 'Appearance could not be saved.'); }}>
             <span className={styles.themeSample} data-theme={choice} aria-hidden="true"><span /><i /></span>
             {themeNames[choice]}
           </button>)}
         </div>
-        <label htmlFor="glass-density">Glass density</label>
+        <label className={styles.densityLabel} htmlFor="glass-density">Glass density</label>
         <AeroSelect id="glass-density" value={density} onChange={(event) => changeDensity(event.currentTarget.value)}>
           <option value="clear">Clear</option>
           <option value="balanced">Balanced</option>
