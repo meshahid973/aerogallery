@@ -41,6 +41,7 @@ export function GalleryPane({ external, onCloseExternal, shellError, onDismissSh
   const [viewing, setViewing] = useState<string | null>(null);
   const [externalView, setExternalView] = useState({ session: '', name: '' });
   const externalFolder = useMemo(() => external ? { rootId: 0, parts: [external.session] } : null, [external]);
+  const navigateExternal = useCallback((name: string) => { if (external) setExternalView({ session: external.session, name }); }, [external]);
   const actions = useRef<HTMLDivElement>(null);
   useEffect(() => { if (external) setViewing(null); }, [external]);
   const open = useCallback((name: string) => { setSelected(name); setViewing(name); }, []);
@@ -75,7 +76,7 @@ export function GalleryPane({ external, onCloseExternal, shellError, onDismissSh
     <main className={styles.gallery} aria-label="Pictures">
       {error && <p role="alert" className={styles.error}>{error}</p>}
       {shellError && <p role="alert" className={styles.error}>{shellError} <AeroButton variant="toolbar" onClick={onDismissShellError}>Dismiss</AeroButton></p>}
-      {folder && photos.length > 0 ? <VirtualGrid previewRevision={previewRevision} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} onOpen={open} onContext={(name) => { setSelected(name); actions.current?.showPopover(); }} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
+      {folder && photos.length > 0 ? <VirtualGrid previewRevision={previewRevision} folder={folder} photos={photos} selected={selected} size={size} onSelect={setSelected} onOpen={open} onContext={(name) => { setSelected(name); requestAnimationFrame(() => { actions.current?.showPopover(); actions.current?.querySelector<HTMLElement>('button:not(:disabled)')?.focus(); }); }} busy={busy} /> : <div className={styles.content} aria-busy={busy}>
         {empty && (
           <div className={styles.empty}>
             {!folder && isDesktop ? <img className={styles.welcomePhoto} src="/appearance/nature.jpg" alt="" draggable={false} /> : <AeroIcon name={folder ? 'folder' : 'picture'} size={48} />}
@@ -91,7 +92,7 @@ export function GalleryPane({ external, onCloseExternal, shellError, onDismissSh
         <AeroButton variant="toolbar" disabled={!selectedPhoto} aria-label="Picture actions" onClick={() => actions.current?.togglePopover()}>⋯</AeroButton>
       </AeroToolbar>
       <PhotoActions panelRef={actions} folder={folder} photo={selectedPhoto} onOpen={() => selectedPhoto && open(selectedPhoto.name)} />
-      {external && externalFolder ? <Suspense fallback={<span className={styles.viewerLoading} role="status">Opening viewer…</span>}><PhotoViewer key={external.session} folder={externalFolder} photos={external.photos} name={externalView.session === external.session ? externalView.name : external.photos[0]?.name ?? ''} onNavigate={(name) => setExternalView({ session: external.session, name })} onClose={onCloseExternal} /></Suspense> : folder && viewing !== null && <Suspense fallback={<span className={styles.viewerLoading} role="status">Opening viewer…</span>}><PhotoViewer folder={folder} photos={photos} name={viewing} onNavigate={open} onClose={close} /></Suspense>}
+      {external && externalFolder ? <Suspense fallback={<span className={styles.viewerLoading} role="status">Opening viewer…</span>}><PhotoViewer key={external.session} folder={externalFolder} photos={external.photos} name={externalView.session === external.session ? externalView.name : external.photos[0]?.name ?? ''} onNavigate={navigateExternal} onClose={onCloseExternal} /></Suspense> : folder && viewing !== null && <Suspense fallback={<span className={styles.viewerLoading} role="status">Opening viewer…</span>}><PhotoViewer folder={folder} photos={photos} name={viewing} onNavigate={open} onClose={close} /></Suspense>}
     </main>
   );
 }
