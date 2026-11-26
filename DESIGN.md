@@ -1,0 +1,9 @@
+# AeroGallery design
+
+Use the original Windows Photo Gallery layout as the functional reference: compact command toolbar, folder navigation, thumbnail surface, address/search controls and status bar. Use glass on the frame, glossy split gradients on controls, recessed inputs, ice-white photo surfaces and public-domain Tango icons. Do not add decorative dashboard cards, oversized headings, simulated photos, or unrelated text.
+
+Colors, lighting and geometry belong in `src/styles/tokens.css`; shared control treatments in `src/styles/materials.css`; reusable controls in `src/components/aero`; gallery-specific layout in its CSS module. Add new states to the existing material system instead of replacing it per feature.
+
+Reference: [original Windows Photo Gallery screenshot](https://betawiki.net/wiki/Windows_Photo_Gallery), [2007 Photo Gallery reconstruction](https://www.viksoe.dk/code/photothing.htm), [2006 Photo Gallery overview](https://arstechnica.com/information-technology/2006/05/4018/), [Windows UX guide](https://learn.microsoft.com/en-us/windows/win32/uxguide/guidelines), [icon design](https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons). Use the previous [Frutiger theme](https://github.com/gelogonza/frutiger-obsidian-theme) and [7.css](https://github.com/khang-nd/7.css) as material references, not runtime dependencies.
+
+Native window decorations remain system-owned. The frame uses CSS reflections rather than unlicensed wallpapers. Preserve keyboard focus, reduced motion/transparency and high-contrast support. New photo features should reuse the existing shell.

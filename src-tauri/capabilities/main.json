@@ -1,0 +1,14 @@
+{
+  "identifier": "main",
+  "description": "Local gallery window; selected library sources only.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "allow-pick-folder",
+    "allow-list-roots",
+    "allow-read-folder",
+    "allow-remove-root",
+    "allow-thumbnail"
+  ]
+}

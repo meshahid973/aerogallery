@@ -1,0 +1,43 @@
+name: Windows gallery
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: foundation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: pnpm build
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - run: pnpm tauri build --no-bundle -- --locked
+      - run: git diff --exit-code -- pnpm-lock.yaml src-tauri/Cargo.lock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-gallery
+          path: src-tauri/target/release/aerogallery.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-preview
+          path: dist/
+          if-no-files-found: error
