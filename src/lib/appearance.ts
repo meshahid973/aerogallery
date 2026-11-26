@@ -20,3 +20,17 @@ export function saveDensity(value: GlassDensity): boolean {
     return false;
   }
 }
+
+export const themes = ['aero', 'aqua', 'aurora', 'frost'] as const;
+export type Theme = typeof themes[number];
+export const themeNames: Record<Theme, string> = { aero: 'Aero', aqua: 'Aqua', aurora: 'Aurora', frost: 'Frost' };
+
+export function readTheme(): Theme {
+  try { return themes.find((theme) => theme === localStorage.getItem('aerogallery.theme')) ?? 'aero'; }
+  catch { return 'aero'; }
+}
+
+export function saveTheme(theme: Theme): boolean {
+  try { localStorage.setItem('aerogallery.theme', theme); return true; }
+  catch { return false; }
+}

@@ -1,0 +1,41 @@
+.caption {
+  display: flex;
+  flex: 0 0 var(--caption-height);
+  min-width: 0;
+  align-items: flex-start;
+  padding: 0 8px 0 10px;
+  gap: 7px;
+  background: var(--caption-glass), rgba(var(--glass-tint), var(--glass-density));
+  box-shadow: inset 0 1px 0 #ffffffc9;
+  user-select: none;
+}
+.drag { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; height: var(--caption-height); color: var(--text); text-shadow: 0 1px 1px #ffffffd9; font-weight: 500; }
+.drag > * { pointer-events: none; }
+.drag span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.error { color: var(--error); }
+.tools { display: flex; align-items: center; gap: 7px; align-self: center; min-width: 0; }
+.tools button { min-height: 27px; }
+.buttons { display: flex; flex: 0 0 auto; border: 1px solid var(--line-strong); border-top: 0; border-radius: 0 0 6px 6px; overflow: visible; box-shadow: var(--raised-shadow); }
+.buttons button { display: grid; place-items: center; width: 35px; height: 26px; border: 0; border-right: 1px solid var(--line-strong); color: #fff; background: var(--caption-button); box-shadow: var(--edge-light); cursor: pointer; }
+.buttons button:first-child { border-bottom-left-radius: 5px; }
+.buttons button:last-child { width: 48px; border-right: 0; border-bottom-right-radius: 5px; }
+.buttons button svg { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: square; filter: drop-shadow(0 1px 0 #16384b); }
+.buttons button:not(:disabled):hover { background: var(--caption-hover); }
+.buttons button:not(:disabled):active { background: var(--caption-pressed); }
+.buttons .close { background: linear-gradient(#ffb9a0, #df7258 45%, #a82920 50%, #d65038); }
+.buttons .close:not(:disabled):hover { background: linear-gradient(#fff1df, #ffad80 47%, #dd3923 50%, #ff8052); }
+.buttons .close:not(:disabled):active { background: linear-gradient(#a02b25, #e46d50); }
+.caption[data-focused="false"] .buttons button:not(:hover):not(:active) { color: #405365; background: var(--silver-gradient); }
+.caption[data-focused="false"] .buttons button svg { filter: none; }
+.caption .buttons button:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
+.resize { position: fixed; z-index: 200; }
+.resize[data-edge="North"] { inset: 0 7px auto; height: 4px; cursor: n-resize; }
+.resize[data-edge="South"] { inset: auto 7px 0; height: 4px; cursor: s-resize; }
+.resize[data-edge="East"] { inset: 7px 0 7px auto; width: 4px; cursor: e-resize; }
+.resize[data-edge="West"] { inset: 7px auto 7px 0; width: 4px; cursor: w-resize; }
+.resize[data-edge="NorthEast"] { top: 0; right: 0; width: 7px; height: 7px; cursor: ne-resize; }
+.resize[data-edge="NorthWest"] { top: 0; left: 0; width: 7px; height: 7px; cursor: nw-resize; }
+.resize[data-edge="SouthEast"] { bottom: 0; right: 0; width: 7px; height: 7px; cursor: se-resize; }
+.resize[data-edge="SouthWest"] { bottom: 0; left: 0; width: 7px; height: 7px; cursor: sw-resize; }
+@media (prefers-reduced-transparency: reduce) { .caption { background: var(--toolbar-gradient); } }
+@media (forced-colors: active) { .caption, .buttons button, .buttons .close { background: Canvas; color: CanvasText; border-color: ButtonText; } .buttons button svg { filter: none; } }

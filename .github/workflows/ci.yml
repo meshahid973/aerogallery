@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: foundation-${{ github.ref }}
+  group: gallery-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
@@ -28,7 +28,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - run: pnpm build
-      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - run: cargo test --release --manifest-path src-tauri/Cargo.toml --locked
       - run: pnpm tauri build --no-bundle -- --locked
       - run: git diff --exit-code -- pnpm-lock.yaml src-tauri/Cargo.lock
       - uses: actions/upload-artifact@v4

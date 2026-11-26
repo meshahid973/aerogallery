@@ -1,3 +1,8 @@
+import rotateLeft from '../../assets/icons/rotate-left.png';
+import rotateRight from '../../assets/icons/rotate-right.png';
+import fullscreen from '../../assets/icons/fullscreen.png';
+import pause from '../../assets/icons/pause.png';
+import play from '../../assets/icons/play.png';
 import picture from '../../assets/icons/picture.png';
 import folder from '../../assets/icons/folder.png';
 import openFolder from '../../assets/icons/open.png';
@@ -9,7 +14,7 @@ import remove from '../../assets/icons/remove.png';
 import search from '../../assets/icons/search.png';
 import appearance from '../../assets/icons/appearance.png';
 
-const icons = { picture, folder, openFolder, up, back, forward, refresh, remove, search, appearance };
+const icons = { picture, folder, openFolder, up, back, forward, refresh, remove, search, appearance, play, pause, fullscreen, rotateLeft, rotateRight };
 export type IconName = keyof typeof icons;
 
 export function AeroIcon({ name, size = 20 }: { name: IconName; size?: number }) {

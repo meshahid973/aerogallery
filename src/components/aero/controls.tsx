@@ -30,6 +30,3 @@ export function AeroToolbar({ className = '', ...props }: HTMLAttributes<HTMLDiv
   return <div className={`aero-toolbar ${className}`} {...props} />;
 }
 
-export function AeroGlass({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={`aero-glass ${className}`} {...props} />;
-}
