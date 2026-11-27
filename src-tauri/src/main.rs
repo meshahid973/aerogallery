@@ -237,6 +237,19 @@ async fn apply_material(
     }
 }
 
+#[tauri::command]
+fn open_release(tag: Option<String>) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        windows_shell::open_release(tag.as_deref())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = tag;
+        Err("Windows only.".into())
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(shell::ShellInbox::default())
@@ -312,6 +325,7 @@ fn main() {
             native_system_menu,
             sync_taskbar,
             apply_material,
+            open_release,
             shell::take_shell_items,
             shell::release_external,
             shell::external_image,

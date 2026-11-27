@@ -14,6 +14,7 @@ fn main() {
             "native_system_menu",
             "sync_taskbar",
             "apply_material",
+            "open_release",
             "take_shell_items",
             "release_external",
             "external_image",

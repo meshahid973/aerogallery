@@ -28,6 +28,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - run: pnpm build
+      - run: node --experimental-strip-types --test tests/releases.test.mjs
       - run: cargo test --release --manifest-path src-tauri/Cargo.toml --locked
       - run: pnpm tauri build --bundles nsis -- --locked
       - name: Verify installer registrations

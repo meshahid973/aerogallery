@@ -4,7 +4,8 @@ import { AeroButton, AeroIconButton, AeroInput, AeroSelect, AeroToolbar } from '
 import { AeroIcon } from './components/aero/Icon';
 import { CaptionBar } from './components/aero/CaptionBar';
 import { AppearancePanel } from './components/aero/AppearancePanel';
-import { folderKey, isDesktop } from './lib/desktop';
+import { ReleaseControl } from './components/aero/ReleaseControl';
+import { folderKey, isDesktop, isWindows } from './lib/desktop';
 import { FolderTree } from './features/gallery/FolderTree';
 import { GalleryPane } from './features/gallery/GalleryPane';
 import type { SortOrder } from './features/gallery/GalleryPane';
@@ -93,6 +94,7 @@ export default function App() {
           <option value="newest">Date modified</option>
           <option value="largest">Size</option>
         </AeroSelect>
+        {isWindows && <ReleaseControl />}
         <AeroIconButton variant="toolbar" icon="appearance" label="Appearance" popoverTarget="appearance-panel" />
       </AeroToolbar>
       <AppearancePanel shell={shell} />

@@ -32,6 +32,8 @@
     "allow-chrome-regions",
     "allow-native-system-menu",
     "allow-sync-taskbar",
-    "allow-apply-material"
+    "allow-apply-material",
+    "allow-open-release",
+    "core:app:allow-version"
   ]
 }

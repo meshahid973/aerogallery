@@ -101,3 +101,10 @@
 .appearanceFields output { text-align: right; font-variant-numeric: tabular-nums; }
 .liveGlass { width: 100%; background: url('/appearance/nature.jpg') center 40% / cover; border: 1px solid var(--line-strong); border-radius: var(--radius-control); overflow: hidden; --glass-effective-opacity: var(--appearance-opacity, .78); }
 .liveGlass > span { display: block; min-height: 24px; padding: 4px 8px; }
+
+.releasePanel:popover-open { width: 286px; gap: var(--space-2); }
+.releaseInfo { display: flex; align-items: center; gap: var(--space-2); width: 100%; }
+.releaseInfo > img { flex-shrink: 0; }
+.releaseInfo > div { min-width: 0; overflow-wrap: anywhere; }
+.releaseInfo p { color: var(--text-muted); margin: var(--space-1) 0 0; }
+.releaseActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-1); width: 100%; }
