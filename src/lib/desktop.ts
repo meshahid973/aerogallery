@@ -71,3 +71,12 @@ export const isWindows = isDesktop && /Windows/i.test(navigator.userAgent);
 export const setWallpaper = (folder: Folder, photo: Photo, position: string) =>
   invoke<void>('set_wallpaper', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp, position });
 export const setViewerFullscreen = (enabled: boolean) => invoke<void>('viewer_fullscreen', { enabled });
+
+export const setChromeRegions = (bounds: number[] | null) => invoke<boolean>('chrome_regions', { bounds });
+export const showSystemMenu = (cursor: boolean) => invoke<void>('native_system_menu', { cursor });
+let taskbarTail: Promise<unknown> = Promise.resolve();
+export function syncTaskbar(active: boolean, previous: boolean, next: boolean, canPlay: boolean, playing: boolean) {
+  const task = taskbarTail.then(() => invoke<void>('sync_taskbar', { active, previous, next, canPlay, playing }));
+  taskbarTail = task.catch(() => {});
+  return task.catch(() => {});
+}

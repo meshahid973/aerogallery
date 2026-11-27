@@ -10,12 +10,14 @@ import { FolderTree } from './features/gallery/FolderTree';
 import { GalleryPane } from './features/gallery/GalleryPane';
 import type { SortOrder } from './features/gallery/GalleryPane';
 import { useGallery } from './features/gallery/useGallery';
+import { useNativeChrome } from './lib/chrome';
 import { useShell } from './features/gallery/useShell';
 import styles from './App.module.css';
 
 const nativeGlass = isDesktop && /Windows/i.test(navigator.userAgent);
 
 export default function App() {
+  useNativeChrome();
   const [theme, setTheme] = useState<Theme>(readTheme);
   const [density, setDensity] = useState<GlassDensity>(readDensity);
   const [sort, setSort] = useState<SortOrder>('name');

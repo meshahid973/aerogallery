@@ -28,6 +28,9 @@
     "allow-release-external",
     "allow-external-image",
     "allow-default-apps",
-    "allow-set-wallpaper"
+    "allow-set-wallpaper",
+    "allow-chrome-regions",
+    "allow-native-system-menu",
+    "allow-sync-taskbar"
   ]
 }

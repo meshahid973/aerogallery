@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { isDesktop } from '../../lib/desktop';
+import { scheduleChromeRegions } from '../../lib/chrome';
+import { isDesktop, isWindows, showSystemMenu } from '../../lib/desktop';
 import { AeroIcon } from './Icon';
 import styles from './CaptionBar.module.css';
 
@@ -14,6 +15,8 @@ export function CaptionBar({ title = 'AeroGallery', fullscreen = false, leading,
   const [focused, setFocused] = useState(true);
   const [error, setError] = useState('');
   const pending = useRef(false);
+
+  useLayoutEffect(() => { scheduleChromeRegions(); return scheduleChromeRegions; }, [fullscreen]);
 
   useEffect(() => {
     if (!isDesktop || !customChrome || fullscreen) return;
@@ -61,7 +64,7 @@ export function CaptionBar({ title = 'AeroGallery', fullscreen = false, leading,
   return (
     <div className={styles.caption} data-focused={focused} data-maximized={maximized}>
       {leading && <div className={styles.tools}>{leading}</div>}
-      <div className={styles.drag} data-tauri-drag-region>
+      <div className={styles.drag} data-tauri-drag-region onContextMenu={(event) => { if (isWindows) { event.preventDefault(); void showSystemMenu(true).catch(() => {}); } }}>
         {!leading && <AeroIcon name="picture" size={18} />}
         <span title={title}>{title}</span>
         {error && <span role="alert" className={styles.error}>{error}</span>}
@@ -71,7 +74,7 @@ export function CaptionBar({ title = 'AeroGallery', fullscreen = false, leading,
         <button type="button" title="Minimize" aria-label="Minimize window" disabled={!isDesktop} onClick={() => void action('minimize')}>
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 11.5h10" /></svg>
         </button>
-        <button type="button" title={maximized ? 'Restore' : 'Maximize'} aria-label={maximized ? 'Restore window' : 'Maximize window'} disabled={!isDesktop} onClick={() => void action('maximize')}>
+        <button type="button" data-max-button title={maximized ? 'Restore' : 'Maximize'} aria-label={maximized ? 'Restore window' : 'Maximize window'} disabled={!isDesktop} onClick={() => void action('maximize')}>
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">{maximized ? <path d="M6 5V2.5h7.5V10H11M2.5 5.5H11V13H2.5Z" /> : <path d="M3 3.5h10v9H3zM3 5.5h10" />}</svg>
         </button>
         <button type="button" className={styles.close} title="Close" aria-label="Close window" disabled={!isDesktop} onClick={() => void action('close')}>
