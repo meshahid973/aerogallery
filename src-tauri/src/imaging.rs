@@ -281,7 +281,9 @@ pub fn clipboard_pixels(bytes: Vec<u8>) -> Result<image::RgbaImage, String> {
     limits.max_image_height = Some(16_384);
     limits.max_alloc = Some(MAX_DECODE_BYTES);
     reader.limits(limits);
-    let decoder = reader.into_decoder().map_err(|_| "Cannot decode picture.")?;
+    let decoder = reader
+        .into_decoder()
+        .map_err(|_| "Cannot decode picture.")?;
     let (width, height) = decoder.dimensions();
     let pixels = u64::from(width) * u64::from(height);
     if pixels == 0

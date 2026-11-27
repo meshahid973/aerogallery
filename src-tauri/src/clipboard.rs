@@ -86,8 +86,7 @@ pub fn copy(hwnd: HWND, rgba: image::RgbaImage) -> Result<(), String> {
         return Err("Clipboard is busy. Try again.".into());
     }
     let _clipboard = Clipboard;
-    if unsafe { EmptyClipboard() } == 0
-        || unsafe { SetClipboardData(CF_DIBV5, memory.0) }.is_null()
+    if unsafe { EmptyClipboard() } == 0 || unsafe { SetClipboardData(CF_DIBV5, memory.0) }.is_null()
     {
         return Err("Cannot copy picture to the clipboard.".into());
     }
