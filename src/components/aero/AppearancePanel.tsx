@@ -15,6 +15,9 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
   const [error, setError] = useState('');
   const [revision, refresh] = useState(0);
   const [focused, setFocused] = useState(true);
+  const [red, green, blue] = tintChannels(value);
+  const transparent = value.opacity < 100;
+  const hue = tintHue(value);
   const latest = useRef(value);
   const dirty = useRef(false);
   const saveTimer = useRef<number | undefined>(undefined);
@@ -45,11 +48,12 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
     node.dataset.theme = value.theme;
     node.dataset.windowFocused = String(focused);
     // Keep title-bar text legible even if a very dark custom tint is selected.
-    const readable = value.tint ? tintChannels(value).map((channel) => Math.round(120 + channel * (135 / 255))).join(', ') : tintChannels(value).join(', ');
+    const channels = [red, green, blue];
+    const readable = (value.tint ? channels.map((channel) => Math.round(120 + channel * (135 / 255))) : channels).join(', ');
     node.style.setProperty('--appearance-tint', readable);
     node.style.setProperty('--appearance-opacity', String(value.opacity / 100));
     node.style.setProperty('--reflection-strength', String(value.reflection / 65));
-  }, [shell, value, focused]);
+  }, [shell, value, focused, red, green, blue]);
   useEffect(() => {
     const queries = [matchMedia('(prefers-reduced-transparency: reduce)'), matchMedia('(forced-colors: active)')];
     const changed = () => refresh((n) => n + 1);
@@ -68,18 +72,18 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
     const node = shell.current;
     if (!node) return;
     let active = true;
-    const permitted = isWindows && !matchMedia('(prefers-reduced-transparency: reduce)').matches && !matchMedia('(forced-colors: active)').matches && value.opacity < 100;
+    const permitted = isWindows && !matchMedia('(prefers-reduced-transparency: reduce)').matches && !matchMedia('(forced-colors: active)').matches && transparent;
     if (!permitted) node.dataset.nativeGlass = 'false';
     if (!isWindows) return;
     const timer = window.setTimeout(() => {
       materialQueue = materialQueue.catch(() => {}).then(async () => {
         if (!active) return;
-        const enabled = await invoke<boolean>('apply_material', { tint: tintChannels(value), opacity: value.opacity, permitted }).catch(() => false);
+        const enabled = await invoke<boolean>('apply_material', { tint: [red, green, blue], opacity: transparent ? 99 : 100, permitted }).catch(() => false);
         if (active) node.dataset.nativeGlass = String(enabled);
       });
     }, 100);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [shell, value.theme, value.tint, value.opacity, revision]);
+  }, [shell, red, green, blue, transparent, revision]);
   return <div id="appearance-panel" popover="auto" className={styles.appearance} aria-label="Appearance">
     <div className={styles.themeChoices} role="group" aria-label="Theme">
       {themes.map((choice) => <button type="button" className={styles.themeChoice} key={choice} aria-pressed={value.theme === choice} onClick={() => change({ ...value, theme: choice, tint: null })}>
@@ -87,7 +91,7 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
       </button>)}
     </div>
     <div className={styles.appearanceFields} onPointerUp={flush} onBlur={flush}>
-      <label htmlFor="glass-tint">Tint</label><AeroRange id="glass-tint" className={styles.tintRange} min={0} max={359} value={tintHue(value)} aria-valuetext={`${tintHue(value)} degrees`} onChange={(event) => change({ ...value, tint: tintFromHue(Number(event.currentTarget.value)) })} /><span />
+      <label htmlFor="glass-tint">Tint</label><AeroRange id="glass-tint" className={styles.tintRange} min={0} max={359} value={hue} aria-valuetext={`${hue} degrees`} onChange={(event) => change({ ...value, tint: tintFromHue(Number(event.currentTarget.value)) })} /><span />
       <label htmlFor="glass-opacity">Opacity</label><AeroRange id="glass-opacity" min={35} max={100} value={value.opacity} onChange={(event) => change({ ...value, opacity: Number(event.currentTarget.value) })} /><output htmlFor="glass-opacity">{value.opacity}%</output>
       <label htmlFor="glass-reflection">Reflection</label><AeroRange id="glass-reflection" min={0} max={100} value={value.reflection} onChange={(event) => change({ ...value, reflection: Number(event.currentTarget.value) })} /><output htmlFor="glass-reflection">{value.reflection}%</output>
     </div>

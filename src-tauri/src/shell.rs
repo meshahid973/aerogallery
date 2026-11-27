@@ -286,7 +286,8 @@ pub async fn copy_image(
                 .ok_or("Window unavailable.")?;
             let bytes = action_bytes(&app, &library, root_id, &parts, &stamp)?;
             let rgba = imaging::clipboard_pixels(bytes)?;
-            crate::clipboard::copy(window.hwnd().map_err(|_| "Window unavailable.")?.0, rgba)
+            let hwnd = window.hwnd().map_err(|_| "Window unavailable.")?.0;
+            crate::clipboard::copy(hwnd, rgba)
         }
         #[cfg(not(windows))]
         {

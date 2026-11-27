@@ -156,6 +156,12 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
     if (actions.current?.matches(':popover-open')) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.key === 'Escape') { event.preventDefault(); escape(); return; }
+    if (isWindows && photo && (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))) {
+      event.preventDefault();
+      const rect = (event.target as HTMLElement).getBoundingClientRect();
+      showPhotoActions(actions.current, rect.left, rect.bottom);
+      return;
+    }
     const element = event.target as HTMLElement;
     if (element.closest('select,input,textarea,[contenteditable=true]')) return;
     if (event.key === ' ' && element.closest('button')) return;

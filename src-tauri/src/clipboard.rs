@@ -103,9 +103,8 @@ mod tests {
     #[test]
     fn bitmap_header_preserves_dimensions_and_alpha() {
         let value = header(2, 3, 24);
-        let field = |offset: usize| {
-            u32::from_le_bytes(value[offset..offset + 4].try_into().unwrap())
-        };
+        let field =
+            |offset: usize| u32::from_le_bytes(value[offset..offset + 4].try_into().unwrap());
         assert_eq!(field(0), 124);
         assert_eq!(field(4), 2);
         assert_eq!(field(8) as i32, -3);
