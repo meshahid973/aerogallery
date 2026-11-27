@@ -29,12 +29,17 @@ jobs:
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - run: pnpm build
       - run: cargo test --release --manifest-path src-tauri/Cargo.toml --locked
-      - run: pnpm tauri build --no-bundle -- --locked
+      - run: pnpm tauri build --bundles nsis -- --locked
+      - name: Verify installer registrations
+        shell: pwsh
+        run: ./scripts/test-windows-installer.ps1
       - run: git diff --exit-code -- pnpm-lock.yaml src-tauri/Cargo.lock
       - uses: actions/upload-artifact@v4
         with:
           name: windows-gallery
-          path: src-tauri/target/release/aerogallery.exe
+          path: |
+            src-tauri/target/release/aerogallery.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:

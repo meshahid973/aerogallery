@@ -11,7 +11,7 @@
         "center": true,
         "resizable": true,
         "decorations": false,
-        "dragDropEnabled": false,
+        "dragDropEnabled": true,
         "theme": "Light",
         "transparent": true,
         "backgroundColor": "#00000000",
@@ -23,5 +23,13 @@
         "shadow": true
       }
     ]
+  },
+  "bundle": {
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "windows/shell.nsh"
+      }
+    }
   }
 }

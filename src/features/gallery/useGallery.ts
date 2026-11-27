@@ -151,6 +151,12 @@ export function useGallery() {
     await load(rootFolder(root));
   });
 
+  const acceptRoots = async (items: Root[]) => {
+    setRoots((previous) => [...previous, ...items.filter((item) => !previous.some((root) => root.id === item.id))]);
+    const first = items[0];
+    if (first && !pending.current) await execute(() => load(rootFolder(first)));
+  };
+
   const toggle = (folder: Folder) => {
     const key = folderKey(folder);
     if (!tree.cache.has(key)) { void select(folder); return; }
@@ -183,5 +189,5 @@ export function useGallery() {
     if (remaining[0]) await load(rootFolder(remaining[0]));
   });
 
-  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy: busy || initializing, error, canBack, back, add, select, refresh, toggle, remove };
+  return { roots, active, listing, cache: tree.cache, expanded: tree.expanded, busy: busy || initializing, error, canBack, back, add, select, refresh, toggle, remove, acceptRoots };
 }

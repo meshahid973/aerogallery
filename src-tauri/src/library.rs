@@ -238,6 +238,14 @@ impl Library {
         Ok(())
     }
 
+    pub fn external_path(&self, selected: &Path) -> Result<PathBuf, String> {
+        let path = fs::canonicalize(selected).map_err(|_| "Picture unavailable.")?;
+        if path.starts_with(&self.0.data) {
+            return Err("Application storage is not a picture folder.".into());
+        }
+        Ok(path)
+    }
+
     fn resolved(&self, id: u32, parts: &[String]) -> Result<PathBuf, String> {
         let path = paths::resolve(&self.0.index.root_path(id)?, parts)?;
         if path.starts_with(&self.0.data) {

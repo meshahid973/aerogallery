@@ -60,5 +60,14 @@ export const readMetadata = (folder: Folder, name: string) =>
   invoke<PhotoMetadata | null>('photo_metadata', { rootId: folder.rootId, parts: [...folder.parts, name] });
 
 export const readFullImage = (folder: Folder, photo: Photo) =>
-  invoke<unknown>('full_image', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp }).then(binaryBuffer);
+  (folder.rootId === 0 ? invoke<unknown>('external_image', { session: folder.parts[0], name: photo.name, stamp: photo.stamp }) :
+    invoke<unknown>('full_image', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp })).then(binaryBuffer);
+
+export interface ExternalSelection { session: string; roots: Root[]; photos: Photo[]; rejected: number }
+export const takeShellItems = () => invoke<ExternalSelection | null>('take_shell_items');
+export const releaseExternal = (session: string) => invoke<void>('release_external', { session });
+export const defaultApps = () => invoke<void>('default_apps');
+export const isWindows = isDesktop && /Windows/i.test(navigator.userAgent);
+export const setWallpaper = (folder: Folder, photo: Photo, position: string) =>
+  invoke<void>('set_wallpaper', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp, position });
 export const setViewerFullscreen = (enabled: boolean) => invoke<void>('viewer_fullscreen', { enabled });

@@ -5,11 +5,12 @@ import { AeroIcon } from './components/aero/Icon';
 import { CaptionBar } from './components/aero/CaptionBar';
 import { glassDensities, readDensity, saveDensity, themes, themeNames, readTheme, saveTheme } from './lib/appearance';
 import type { GlassDensity, Theme } from './lib/appearance';
-import { folderKey, isDesktop } from './lib/desktop';
+import { defaultApps, folderKey, isDesktop, isWindows } from './lib/desktop';
 import { FolderTree } from './features/gallery/FolderTree';
 import { GalleryPane } from './features/gallery/GalleryPane';
 import type { SortOrder } from './features/gallery/GalleryPane';
 import { useGallery } from './features/gallery/useGallery';
+import { useShell } from './features/gallery/useShell';
 import styles from './App.module.css';
 
 const nativeGlass = isDesktop && /Windows/i.test(navigator.userAgent);
@@ -26,6 +27,7 @@ export default function App() {
   const deferredSearch = useDeferredValue(search);
   const gallery = useGallery();
   const { active, roots, busy, listing } = gallery;
+  const incoming = useShell(busy, gallery.acceptRoots);
   const key = active ? folderKey(active) : 'library';
   const root = roots.find((item) => item.id === active?.rootId);
   const query = search.folder === key ? search.value : '';
@@ -69,7 +71,7 @@ export default function App() {
   }
 
   return (
-    <div ref={shell} onKeyDown={shortcuts} className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass}>
+    <div ref={shell} onKeyDown={shortcuts} className={styles.shell} data-glass={density} data-theme={theme} data-native-glass={nativeGlass} data-dragging={incoming.dragging}>
       <CaptionBar />
       <AeroToolbar className={styles.commands} data-tone="glass" aria-label="Library commands">
         <div className={styles.actions}>
@@ -117,12 +119,14 @@ export default function App() {
           <option value="balanced">Balanced</option>
           <option value="solid">Solid</option>
         </AeroSelect>
+        {isWindows && <AeroButton onClick={() => void defaultApps().catch((failure) => setPreferenceError(String(failure)))}>Windows Default Apps</AeroButton>}
         {preferenceError && <p role="status" className={styles.preferenceError}>{preferenceError}</p>}
       </div>
       <div className={styles.workspace}>
         <FolderTree roots={roots} active={active} cache={gallery.cache} expanded={gallery.expanded} busy={busy} onSelect={(folder) => void gallery.select(folder)} onToggle={gallery.toggle} />
-        <GalleryPane key={JSON.stringify([key, galleryQuery, sort])} folder={active} listing={listing} busy={busy} error={gallery.error} query={galleryQuery} sort={sort} size={size} previewRevision={previewRevision} onSize={setSize} onAdd={() => void gallery.add()} />
+        <GalleryPane key={JSON.stringify([key, galleryQuery, sort])} external={incoming.external} onCloseExternal={incoming.close} shellError={incoming.error} onDismissShellError={() => incoming.setError('')} folder={active} listing={listing} busy={busy} error={gallery.error} query={galleryQuery} sort={sort} size={size} previewRevision={previewRevision} onSize={setSize} onAdd={() => void gallery.add()} />
       </div>
+      {incoming.dragging && <div className={styles.dropHint} role="status">Drop pictures or folders</div>}
     </div>
   );
 }
