@@ -271,6 +271,37 @@ pub fn full_image(path: &Path) -> Result<Vec<u8>, String> {
     Ok(output.0)
 }
 
+#[cfg(windows)]
+pub fn clipboard_pixels(bytes: Vec<u8>) -> Result<image::RgbaImage, String> {
+    let mut reader = ImageReader::new(Cursor::new(bytes.as_slice()))
+        .with_guessed_format()
+        .map_err(|_| "Cannot identify picture.")?;
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(16_384);
+    limits.max_image_height = Some(16_384);
+    limits.max_alloc = Some(MAX_DECODE_BYTES);
+    reader.limits(limits);
+    let decoder = reader
+        .into_decoder()
+        .map_err(|_| "Cannot decode picture.")?;
+    let (width, height) = decoder.dimensions();
+    let pixels = u64::from(width) * u64::from(height);
+    if pixels == 0
+        || pixels > MAX_PIXELS
+        || decoder.total_bytes() > MAX_DECODE_BYTES
+        || (bytes.len() as u64)
+            .saturating_add(decoder.total_bytes())
+            .saturating_add(pixels * 4)
+            > MAX_WORKING_BYTES
+        || pixels * 8 + 124 > MAX_WORKING_BYTES
+    {
+        return Err("Picture exceeds the clipboard memory limit.".into());
+    }
+    let image = DynamicImage::from_decoder(decoder).map_err(|_| "Cannot decode picture.")?;
+    drop(bytes);
+    Ok(image.into_rgba8())
+}
+
 struct LimitedOutput(Vec<u8>);
 
 impl Write for LimitedOutput {

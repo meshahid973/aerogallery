@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { AeroButton } from './controls';
+import { defaultApps } from '../../lib/desktop';
 import { AeroIcon } from './Icon';
 import { checkRelease, isNewerRelease } from '../../lib/releases';
 import type { ReleaseCheck } from '../../lib/releases';
@@ -67,8 +68,8 @@ export function ReleaseControl() {
   }
 
   return <>
-    <AeroButton variant={available ? 'accent' : 'toolbar'} popoverTarget="release-panel" title={available ? 'A new version is available' : 'Software updates'}>
-      <AeroIcon name="refresh" size={16} /> {available ? 'Update available' : 'Updates'}
+    <AeroButton variant={available ? 'accent' : 'toolbar'} className={available ? '' : 'aero-icon-button'} popoverTarget="release-panel" aria-label={available ? 'Update available' : 'Application options and updates'} title={available ? 'A new version is available' : 'Application options and updates'}>
+      <AeroIcon name="refresh" size={16} /> {available && 'Update available'}
     </AeroButton>
     <div id="release-panel" popover="auto" className={`${styles.appearance} ${styles.releasePanel}`} aria-label="Software updates">
       <div className={styles.releaseInfo}>
@@ -79,6 +80,7 @@ export function ReleaseControl() {
         <AeroButton disabled={checking} onClick={() => void check(true)}>Check now</AeroButton>
         <AeroButton variant={available ? 'accent' : 'standard'} disabled={opening} onClick={() => void openRelease()}>{available ? 'View release' : 'GitHub Releases'}</AeroButton>
       </div>
+      <AeroButton variant="toolbar" className={styles.defaultApps} onClick={() => { setOpenError(''); void defaultApps().catch(() => setOpenError('Could not open Windows Default Apps.')); }}>Windows Default Apps</AeroButton>
       {openError && <p className={styles.preferenceError} role="alert">{openError}</p>}
     </div>
   </>;

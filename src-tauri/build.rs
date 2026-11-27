@@ -19,6 +19,7 @@ fn main() {
             "release_external",
             "external_image",
             "default_apps",
+            "copy_image",
             "set_wallpaper",
         ]),
     ))

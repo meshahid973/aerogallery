@@ -85,9 +85,12 @@
 [data-theme] ::-webkit-scrollbar-corner { background: var(--scroll-track); }
 @media (forced-colors: active) { [data-theme] ::-webkit-scrollbar-thumb { background: ButtonFace; border: 1px solid ButtonText; } }
 
-.aero-photo-actions { inset: auto 12px 38px auto; margin: 0; padding: 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--paper); color: var(--text); box-shadow: var(--raised-shadow); max-width: calc(100vw - 24px); }
-.aero-photo-actions:popover-open { display: grid; gap: 6px; }
-.aero-photo-actions label { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.aero-photo-actions { position: fixed; inset: 4px auto auto 4px; margin: 0; padding: 4px; min-width: 156px; border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--paper); color: var(--text); box-shadow: var(--edge-light), var(--raised-shadow); max-width: min(230px, calc(100vw - 8px)); max-height: calc(100dvh - 8px); overflow: auto; }
+.aero-photo-actions:popover-open { display: grid; gap: 1px; }
+.aero-photo-actions > .aero-button { justify-content: flex-start; }
+.aero-photo-actions p { padding: 4px 6px; overflow-wrap: anywhere; color: var(--text-muted); }
+.aero-wallpaper-options { display: flex; gap: 4px; padding: 4px; border-top: 1px solid var(--line); }
+.aero-wallpaper-options select { min-width: 0; flex: 1; }
 
 .aero-button--orb { background: var(--orb-material); border-color: var(--orb-edge); box-shadow: var(--orb-shadow); border-radius: 50%; }
 .aero-button--orb:not(:disabled):hover { background: var(--orb-material); border-color: var(--focus); box-shadow: var(--orb-shadow); }

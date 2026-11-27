@@ -34,3 +34,21 @@ export function saveAppearance(value: Appearance): boolean {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; }
   catch { return false; }
 }
+
+export function tintHue(value: Appearance): number {
+  const [r, g, b] = tintChannels(value).map((channel) => channel / 255) as [number, number, number];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  if (!delta) return 0;
+  const hue = max === r ? (g - b) / delta : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+  return Math.round((hue * 60 + 360) % 360);
+}
+
+export function tintFromHue(hue: number): string {
+  const h = (hue % 360) / 60;
+  const c = 0.24;
+  const x = c * (1 - Math.abs(h % 2 - 1));
+  const rgb = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x] : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x];
+  return '#' + rgb.map((channel) => Math.round((channel + 0.68) * 255).toString(16).padStart(2, '0')).join('');
+}

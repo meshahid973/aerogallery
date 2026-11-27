@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { defaults, readAppearance, saveAppearance, themes, themeNames, tintOf, tintChannels } from '../../lib/appearance';
+import { defaults, readAppearance, saveAppearance, themes, themeNames, tintChannels, tintHue, tintFromHue } from '../../lib/appearance';
 import type { Appearance } from '../../lib/appearance';
-import { defaultApps, isWindows } from '../../lib/desktop';
-import { AeroButton, AeroInput, AeroRange } from './controls';
+import { isWindows } from '../../lib/desktop';
+import { AeroButton, AeroRange } from './controls';
 import styles from '../../App.module.css';
 
 let materialQueue: Promise<unknown> = Promise.resolve();
@@ -15,10 +15,30 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
   const [error, setError] = useState('');
   const [revision, refresh] = useState(0);
   const [focused, setFocused] = useState(true);
-  function change(next: Appearance) {
-    setValue(next);
-    setError(saveAppearance(next) ? '' : 'Appearance could not be saved.');
+  const latest = useRef(value);
+  const dirty = useRef(false);
+  const saveTimer = useRef<number | undefined>(undefined);
+  function flush() {
+    window.clearTimeout(saveTimer.current);
+    if (!dirty.current) return;
+    dirty.current = false;
+    if (!saveAppearance(latest.current)) {
+      dirty.current = true;
+      setError('Appearance could not be saved.');
+    } else setError('');
   }
+  function change(next: Appearance) {
+    latest.current = next;
+    dirty.current = true;
+    setValue(next);
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(flush, 160);
+  }
+  useEffect(() => {
+    const save = () => { if (dirty.current) saveAppearance(latest.current); };
+    window.addEventListener('pagehide', save);
+    return () => { window.clearTimeout(saveTimer.current); save(); window.removeEventListener('pagehide', save); };
+  }, []);
   useEffect(() => {
     const node = shell.current;
     if (!node) return;
@@ -63,17 +83,15 @@ export function AppearancePanel({ shell }: { shell: RefObject<HTMLDivElement | n
   return <div id="appearance-panel" popover="auto" className={styles.appearance} aria-label="Appearance">
     <div className={styles.themeChoices} role="group" aria-label="Theme">
       {themes.map((choice) => <button type="button" className={styles.themeChoice} key={choice} aria-pressed={value.theme === choice} onClick={() => change({ ...value, theme: choice, tint: null })}>
-        <span className={styles.themeSample} data-theme={choice} aria-hidden="true"><span /><i /></span>{themeNames[choice]}
+        <span className={styles.themeSample} data-theme={choice} aria-hidden="true" />{themeNames[choice]}
       </button>)}
     </div>
-    <div className={styles.liveGlass} aria-hidden="true"><span className="aero-caption-material">AeroGallery</span><span className="aero-toolbar" data-tone="glass">Pictures</span></div>
-    <div className={styles.appearanceFields}>
-      <label htmlFor="glass-tint">Tint</label><AeroInput id="glass-tint" type="color" value={tintOf(value)} onChange={(event) => change({ ...value, tint: event.currentTarget.value })} /><span />
+    <div className={styles.appearanceFields} onPointerUp={flush} onBlur={flush}>
+      <label htmlFor="glass-tint">Tint</label><AeroRange id="glass-tint" className={styles.tintRange} min={0} max={359} value={tintHue(value)} aria-valuetext={`${tintHue(value)} degrees`} onChange={(event) => change({ ...value, tint: tintFromHue(Number(event.currentTarget.value)) })} /><span />
       <label htmlFor="glass-opacity">Opacity</label><AeroRange id="glass-opacity" min={35} max={100} value={value.opacity} onChange={(event) => change({ ...value, opacity: Number(event.currentTarget.value) })} /><output htmlFor="glass-opacity">{value.opacity}%</output>
       <label htmlFor="glass-reflection">Reflection</label><AeroRange id="glass-reflection" min={0} max={100} value={value.reflection} onChange={(event) => change({ ...value, reflection: Number(event.currentTarget.value) })} /><output htmlFor="glass-reflection">{value.reflection}%</output>
     </div>
-    <AeroButton onClick={() => change({ ...defaults })}>Reset</AeroButton>
-    {isWindows && <AeroButton onClick={() => void defaultApps().catch((failure) => setError(String(failure)))}>Windows Default Apps</AeroButton>}
+    <AeroButton variant="toolbar" className={styles.resetAppearance} onClick={() => { change({ ...defaults }); flush(); }}>Reset</AeroButton>
     {error && <p role="status" className={styles.preferenceError}>{error}</p>}
   </div>;
 }

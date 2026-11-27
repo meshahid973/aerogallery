@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(windows)]
+mod clipboard;
 mod disk_cache;
 mod imaging;
 mod index;
@@ -330,6 +332,7 @@ fn main() {
             shell::release_external,
             shell::external_image,
             shell::default_apps,
+            shell::copy_image,
             shell::set_wallpaper
         ])
         .run(tauri::generate_context!())

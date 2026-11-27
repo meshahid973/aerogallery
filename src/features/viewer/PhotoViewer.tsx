@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { AeroButton, AeroIconButton, AeroSelect, AeroToolbar } from '../../components/aero/controls';
 import { CaptionBar, customChrome } from '../../components/aero/CaptionBar';
-import { PhotoActions } from '../../components/aero/PhotoActions';
+import { PhotoActions, showPhotoActions } from '../../components/aero/PhotoActions';
 import { AeroIcon } from '../../components/aero/Icon';
 import { suspendThumbnailQueue } from '../gallery/thumbnails';
 import { isWindows, setViewerFullscreen, syncTaskbar } from '../../lib/desktop';
@@ -153,6 +153,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
   }, [index, photos.length, error, playing]);
 
   function keyboard(event: KeyboardEvent<HTMLDialogElement>) {
+    if (actions.current?.matches(':popover-open')) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.key === 'Escape') { event.preventDefault(); escape(); return; }
     const element = event.target as HTMLElement;
@@ -172,7 +173,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
 
   return (
     <dialog ref={dialog} className={styles.viewer} tabIndex={-1} aria-label="Photo viewer" data-fullscreen={fullscreen} onKeyDown={keyboard}
-      onCancel={(event) => { event.preventDefault(); escape(); }}>
+      onCancel={(event) => { event.preventDefault(); if (actions.current?.matches(':popover-open')) actions.current.hidePopover(); else escape(); }}>
       {customChrome && !fullscreen ? (
         <CaptionBar title={name} leading={<AeroButton variant="toolbar" onClick={onClose}><AeroIcon name="back" size={18} /> Gallery</AeroButton>} trailing={<>
           <span className={styles.counter}>{index >= 0 ? index + 1 : '—'} / {photos.length}</span>
@@ -187,7 +188,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
         </AeroToolbar>
       )}
       {isWindows && <PhotoActions panelRef={actions} folder={folder} photo={photo} />}
-      <div className={styles.surface} onContextMenu={(event) => { if (photo && isWindows) { event.preventDefault(); actions.current?.showPopover(); actions.current?.querySelector<HTMLElement>('select')?.focus(); } }} aria-busy={!ready && !error}>
+      <div className={styles.surface} onContextMenu={(event) => { if (photo && isWindows) { event.preventDefault(); showPhotoActions(actions.current, event.clientX, event.clientY); } }} aria-busy={!ready && !error}>
         {asset && !error && <PhotoStage key={asset.url} url={asset.url} name={name} onReady={onReady} onError={onError} controls={stage} onZoom={setZoom} />}
         {!ready && !error && <div className={styles.message} role="status"><span className="aero-spinner" aria-hidden="true" /> Opening picture…</div>}
         {error && <div className={styles.message} role="alert"><span>{error}</span>{photo && <AeroButton onClick={() => { setLoaded(''); setFailed(''); setRetry((value) => value + 1); }}>Retry</AeroButton>}</div>}
@@ -211,7 +212,7 @@ export default function PhotoViewer({ folder, photos, name, onNavigate, onClose 
         <div className={styles.group}>
           <AeroButton className={styles.glyph} title="Rotate left (Shift+R)" aria-label="Rotate left" disabled={!ready} onClick={() => stage.current?.rotate(-90)}><AeroIcon name="rotateLeft" size={18} /></AeroButton>
           <AeroButton className={styles.glyph} title="Rotate right (R)" aria-label="Rotate right" disabled={!ready} onClick={() => stage.current?.rotate(90)}><AeroIcon name="rotateRight" size={18} /></AeroButton>
-          {isWindows && <AeroButton variant="toolbar" aria-label="Picture actions" disabled={!photo} onClick={() => actions.current?.togglePopover()}>⋯</AeroButton>}
+          {isWindows && <AeroButton variant="toolbar" aria-label="Picture actions" disabled={!photo} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); showPhotoActions(actions.current, rect.left, rect.top - 108); }}>⋯</AeroButton>}
           <AeroSelect aria-label="Slideshow interval" title="Slideshow interval" value={interval} onChange={(event) => setInterval(Number(event.currentTarget.value))}>
             <option value={3}>3 s</option><option value={5}>5 s</option><option value={10}>10 s</option>
           </AeroSelect>
