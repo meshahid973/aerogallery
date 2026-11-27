@@ -57,7 +57,7 @@ export function ReleaseControl() {
     setOpening(true);
     setOpenError('');
     try {
-      await invoke('open_release', { tag: result?.tag ?? null });
+      await invoke('open_release', { tag: available ? result?.tag : null });
     } catch {
       if (mounted.current) setOpenError('Could not open GitHub Releases.');
     } finally {

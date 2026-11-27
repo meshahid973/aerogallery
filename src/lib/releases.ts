@@ -3,7 +3,7 @@ const cacheKey = 'aerogallery.release-check.v1';
 const cacheAge = 6 * 60 * 60 * 1000;
 
 interface Version {
-  numbers: number[];
+  numbers: [number, number, number];
   prerelease: boolean;
 }
 
@@ -11,7 +11,7 @@ function parseVersion(tag: string): Version | null {
   if (tag.length > 100) return null;
   const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(tag);
   if (!match || match[0] !== tag) return null;
-  const numbers = match.slice(1, 4).map(Number);
+  const numbers: Version['numbers'] = [Number(match[1]), Number(match[2]), Number(match[3])];
   return numbers.every(Number.isSafeInteger) ? { numbers, prerelease: !!match[4] } : null;
 }
 
@@ -19,7 +19,7 @@ export function isNewerRelease(tag: string, installed: string): boolean {
   const latest = parseVersion(tag);
   const current = parseVersion(installed);
   if (!latest || latest.prerelease || !current) throw new Error('Unsupported release version.');
-  for (let index = 0; index < 3; index++) {
+  for (const index of [0, 1, 2] as const) {
     if (latest.numbers[index] !== current.numbers[index]) return latest.numbers[index] > current.numbers[index];
   }
   return current.prerelease;
