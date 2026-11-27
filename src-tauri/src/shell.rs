@@ -250,6 +250,55 @@ pub fn default_apps() -> Result<(), String> {
     }
 }
 
+fn action_bytes(
+    app: &AppHandle,
+    library: &Library,
+    root_id: u32,
+    parts: &[String],
+    stamp: &str,
+) -> Result<Vec<u8>, String> {
+    if root_id == 0 {
+        if parts.len() != 2 {
+            return Err("Invalid selection.".into());
+        }
+        external_bytes(&app.state::<ShellInbox>(), &parts[0], &parts[1], stamp)
+    } else {
+        library.full_image(root_id, parts, stamp)
+    }
+}
+
+#[tauri::command]
+pub async fn copy_image(
+    app: AppHandle,
+    root_id: u32,
+    parts: Vec<String>,
+    stamp: String,
+    library: State<'_, Library>,
+) -> Result<(), String> {
+    let library = library.inner().clone();
+    let permit = library.view_permit()?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let _permit = permit;
+        #[cfg(windows)]
+        {
+            let window = app
+                .get_webview_window("main")
+                .ok_or("Window unavailable.")?;
+            let bytes = action_bytes(&app, &library, root_id, &parts, &stamp)?;
+            let rgba = imaging::clipboard_pixels(bytes)?;
+            let hwnd = window.hwnd().map_err(|_| "Window unavailable.")?.0;
+            crate::clipboard::copy(hwnd, rgba)
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = (app, library, root_id, parts, stamp);
+            Err("Windows only.".into())
+        }
+    })
+    .await
+    .map_err(|_| "Cannot copy picture.".to_string())?
+}
+
 #[tauri::command]
 pub async fn set_wallpaper(
     app: AppHandle,
@@ -263,14 +312,7 @@ pub async fn set_wallpaper(
     let permit = library.view_permit()?;
     tauri::async_runtime::spawn_blocking(move || {
         let _permit = permit;
-        let bytes = if root_id == 0 {
-            if parts.len() != 2 {
-                return Err("Invalid selection.".into());
-            }
-            external_bytes(&app.state::<ShellInbox>(), &parts[0], &parts[1], &stamp)?
-        } else {
-            library.full_image(root_id, &parts, &stamp)?
-        };
+        let bytes = action_bytes(&app, &library, root_id, &parts, &stamp)?;
         #[cfg(windows)]
         {
             crate::windows_shell::wallpaper(

@@ -1,9 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(windows)]
+mod clipboard;
 mod disk_cache;
 mod imaging;
 mod index;
 mod library;
+#[cfg(windows)]
+mod material;
 #[cfg(windows)]
 mod native_window;
 mod paths;
@@ -205,6 +209,49 @@ async fn sync_taskbar(
     }
 }
 
+#[tauri::command]
+async fn apply_material(
+    window: tauri::WebviewWindow,
+    tint: [u8; 3],
+    opacity: u8,
+    permitted: bool,
+) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        let (send, receive) = std::sync::mpsc::sync_channel(1);
+        let target = window.clone();
+        window
+            .run_on_main_thread(move || {
+                let _ = send.send(material::apply(&target, tint, opacity, permitted));
+            })
+            .map_err(|error| error.to_string())?;
+        tauri::async_runtime::spawn_blocking(move || {
+            receive.recv_timeout(std::time::Duration::from_secs(5))
+        })
+        .await
+        .map_err(|_| "Material update unavailable.".to_string())?
+        .map_err(|_| "Material update unavailable.".to_string())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, tint, opacity, permitted);
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+fn open_release(tag: Option<String>) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        windows_shell::open_release(tag.as_deref())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = tag;
+        Err("Windows only.".into())
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(shell::ShellInbox::default())
@@ -279,10 +326,13 @@ fn main() {
             chrome_regions,
             native_system_menu,
             sync_taskbar,
+            apply_material,
+            open_release,
             shell::take_shell_items,
             shell::release_external,
             shell::external_image,
             shell::default_apps,
+            shell::copy_image,
             shell::set_wallpaper
         ])
         .run(tauri::generate_context!())

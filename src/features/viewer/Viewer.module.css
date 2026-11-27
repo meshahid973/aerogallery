@@ -25,7 +25,7 @@
 .picture { position: absolute; top: 50%; left: 50%; max-width: none; max-height: none; object-fit: contain; transform-origin: center; pointer-events: none; }
 .message { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; flex-wrap: wrap; align-content: center; color: var(--text-muted); }
 .notice { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: var(--error); background: var(--paper); padding: 7px 12px; border-radius: var(--radius-control); }
-.controls { flex: 0 0 auto; min-height: 60px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; border-top: 1px solid var(--line); padding: 6px 14px; background: var(--footer-material); }
+.controls { flex: 0 0 auto; min-height: 60px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; border-top: 1px solid var(--line); padding: 6px 14px; }
 .group { display: flex; align-items: center; gap: 5px; min-width: 0; }
 .group:last-child { justify-content: flex-end; }
 .glyph { font-size: 17px; line-height: 1; min-width: 28px; padding: 3px 5px; }
@@ -34,10 +34,7 @@
 .playback > button:not(.play) { width: 40px; height: 34px; min-width: 0; }
 .playback > button:first-child { border-radius: 20px 3px 3px 20px; padding-right: 8px; }
 .playback > button:last-child { border-radius: 3px 20px 20px 3px; padding-left: 8px; }
-.playback .play { position: relative; z-index: 1; margin: 0 -3px; border-radius: 50%; width: 46px; height: 46px; padding: 4px; background: var(--orb-material); border-color: var(--orb-edge); box-shadow: var(--orb-shadow); }
-.playback .play:not(:disabled):hover { background: var(--orb-material); border-color: var(--focus); box-shadow: var(--orb-shadow), 0 0 5px hsl(var(--hue) 85% 55% / .65); }
-.playback .play:not(:disabled):active, .playback .play[aria-pressed="true"]:not(:disabled) { background: var(--pressed-gradient); box-shadow: var(--recessed-shadow); }
-.playback .play:disabled { background: var(--silver-gradient); border-color: var(--line); box-shadow: var(--edge-light); }
+.playback .play { position: relative; z-index: 1; margin: 0 -3px; width: 46px; height: 46px; padding: 4px; }
 .viewer[data-fullscreen="true"] .surface { background: #111820; }
 @media (max-width: 780px) {
   .controls { grid-template-columns: 1fr auto 1fr; gap: 5px; padding-inline: 6px; }
@@ -52,5 +49,4 @@
 }
 @media (forced-colors: active) {
   .heading, .controls, .surface, .viewer[data-fullscreen="true"] .surface { background: Canvas; color: CanvasText; }
-  .playback .play, .playback .play:not(:disabled):hover { background: ButtonFace; border-color: ButtonText; box-shadow: none; }
 }

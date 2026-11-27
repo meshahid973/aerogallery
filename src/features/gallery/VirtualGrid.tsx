@@ -19,12 +19,12 @@ const PhotoTile = memo(function PhotoTile({ folder, photo, index, total, selecte
   previewRevision: number;
   onSelect: (name: string) => void;
   onOpen: (name: string) => void;
-  onContext: (name: string) => void;
+  onContext: (name: string, x: number, y: number) => void;
 }) {
   const { url, error, retry, markFailed } = useThumbnail(folder, photo.name, photo.stamp, previewRevision);
   return (
     <li className={styles.photoCell} aria-posinset={index + 1} aria-setsize={total}>
-      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onKeyDown={(event) => { if (error && !event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === 'r') { event.preventDefault(); retry(); } }} onContextMenu={(event) => { event.preventDefault(); onContext(photo.name); }} title={error ? `${photo.name} — ${error} (R to retry)` : photo.name}>
+      <button type="button" className={styles.photo} data-photo-index={index} aria-pressed={selected} tabIndex={tabbable ? 0 : -1} onClick={() => onSelect(photo.name)} onDoubleClick={() => onOpen(photo.name)} onKeyDown={(event) => { if (error && !event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === 'r') { event.preventDefault(); retry(); } }} onContextMenu={(event) => { event.preventDefault(); onContext(photo.name, event.clientX, event.clientY); }} title={error ? `${photo.name} — ${error} (R to retry)` : photo.name}>
         <span className={styles.imageFrame} data-placeholder={!url}>
           {url ? <img className={styles.thumbnail} src={url} alt="" draggable={false} decoding="async" onError={markFailed} /> : error ? <span className={styles.previewError}>Preview unavailable</span> : <span className={styles.previewPending}><AeroIcon name="picture" size={34} /></span>}
         </span>
@@ -42,7 +42,7 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
   previewRevision: number;
   onSelect: (name: string) => void;
   onOpen: (name: string) => void;
-  onContext: (name: string) => void;
+  onContext: (name: string, x: number, y: number) => void;
   busy: boolean;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
@@ -115,7 +115,7 @@ export function VirtualGrid({ folder, photos, selected, size, previewRevision, o
     const current = Number(target?.dataset.photoIndex);
     if (!target || !Number.isInteger(current)) return;
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { const photo = photos[current]; if (photo) { event.preventDefault(); onContext(photo.name); } return; }
+    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { const photo = photos[current]; if (photo) { event.preventDefault(); const rect = target.getBoundingClientRect(); onContext(photo.name, rect.left, rect.bottom); } return; }
     if (event.key === 'Enter') { const photo = photos[current]; if (photo) { event.preventDefault(); onOpen(photo.name); } return; }
     const steps: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns, PageUp: -Math.max(1, Math.floor(metrics.height / stride)) * columns, PageDown: Math.max(1, Math.floor(metrics.height / stride)) * columns };
     if (!Object.hasOwn(steps, event.key) && event.key !== 'Home' && event.key !== 'End') return;

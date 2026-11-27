@@ -313,6 +313,9 @@ unsafe extern "system" fn parent_proc(
                 return 0;
             }
         }
+        WM_SETTINGCHANGE | WM_THEMECHANGED | WM_DWMCOMPOSITIONCHANGED => {
+            let _ = data.app.emit_to("main", "aero-material-settings", ());
+        }
         WM_DPICHANGED => {
             if let Ok(mut rect) = state.rect.lock() {
                 *rect = None;

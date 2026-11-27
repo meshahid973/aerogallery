@@ -13,10 +13,13 @@ fn main() {
             "chrome_regions",
             "native_system_menu",
             "sync_taskbar",
+            "apply_material",
+            "open_release",
             "take_shell_items",
             "release_external",
             "external_image",
             "default_apps",
+            "copy_image",
             "set_wallpaper",
         ]),
     ))

@@ -80,3 +80,6 @@ export function syncTaskbar(active: boolean, previous: boolean, next: boolean, c
   taskbarTail = task.catch(() => {});
   return task.catch(() => {});
 }
+
+export const copyImage = (folder: Folder, photo: Photo) =>
+  invoke<void>('copy_image', { rootId: folder.rootId, parts: [...folder.parts, photo.name], stamp: photo.stamp });
